@@ -1,0 +1,38 @@
+{% load icones %}
+{% comment %}
+  Mensagens do Django como avisos flutuantes.
+
+  `role="status"` e `aria-live="polite"`: o aviso é anunciado quando a leitura
+  em curso terminar, sem interromper. `assertive` seria correto para um erro
+  que bloqueia — não é o caso de nenhum aviso desta página.
+
+  Cada tipo leva ÍCONE além de cor. Nesta paleta isso não é zelo: o vermelho
+  de erro e o carmim da marca são o mesmo matiz, e quem não os distingue
+  precisa da forma para saber o que está lendo.
+{% endcomment %}
+{% if messages %}
+  <div class="pointer-events-none fixed inset-x-0 bottom-0 z-[80] flex flex-col items-center gap-2 p-4 sm:bottom-6"
+       role="status" aria-live="polite">
+    {% for message in messages %}
+      <div x-data="{ visivel: true }"
+           x-show="visivel"
+           x-transition.opacity.duration.200ms
+           class="card pointer-events-auto flex w-full max-w-md items-start gap-3 border-borda-forte bg-fundo p-4 shadow-xl shadow-black/50">
+        <span class="mt-0.5 flex-none
+                     {% if message.tags == 'sucesso' %}msg-sucesso{% elif message.tags == 'erro' %}msg-erro{% elif message.tags == 'aviso' %}msg-aviso{% else %}msg-info{% endif %}">
+          {% if message.tags == 'sucesso' %}{% icone "CheckCircle" size=18 %}
+          {% elif message.tags == 'erro' %}{% icone "AlertCircle" size=18 %}
+          {% elif message.tags == 'aviso' %}{% icone "AlertCircle" size=18 %}
+          {% else %}{% icone "Info" size=18 %}{% endif %}
+        </span>
+        <p class="flex-1 text-sm leading-relaxed text-osso">{{ message }}</p>
+        <button type="button"
+                @click="visivel = false"
+                aria-label="Fechar aviso"
+                class="-m-1 flex-none rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+          {% icone "X" size=16 %}
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

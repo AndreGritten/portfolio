@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-andre-gritten",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ferramentas de build do portfólio: Tailwind, ícones lucide e fontes auto-hospedadas. Rodar o site NÃO exige Node — o CSS compilado, o icones.json e os .woff2 são versionados.",
+  "scripts": {
+    "css": "tailwindcss -c theme/tailwind.config.js -i theme/input.css -o static/css/app.css --minify",
+    "css:watch": "tailwindcss -c theme/tailwind.config.js -i theme/input.css -o static/css/app.css --watch",
+    "icones": "node theme/extrair-icones.js",
+    "fontes": "node theme/baixar-fontes.js"
+  },
+  "devDependencies": {
+    "lucide-static": "^0.469.0",
+    "tailwindcss": "^3.4.17"
+  }
+}

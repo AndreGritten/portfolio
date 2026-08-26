@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# Python / Django
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# O banco é recriado por `python manage.py migrate`. Não versionar evita
+# conflitos e mantém fora do histórico qualquer dado de teste.
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
+test_db.sqlite3
+
+# Uploads do admin (imagens de projeto, PDFs de certificado). Em produção
+# eles vão para o Cloudinary; aqui é só o espelho local.
+/media/
+
+# Coletados por `collectstatic` — gerados, não fonte.
+/staticfiles/
+
+# ---------------------------------------------------------------------------
+# Ambiente
+# ---------------------------------------------------------------------------
+.env
+.env.local
+.env*.local
+
+# ---------------------------------------------------------------------------
+# Node — só o build do Tailwind e a extração de ícones dependem dele.
+#
+# O static/css/app.css compilado É versionado, de propósito: quem clona o
+# repositório roda o projeto sem instalar Node.
+# ---------------------------------------------------------------------------
+node_modules/
+
+# ---------------------------------------------------------------------------
+# Material de referência — não é código deste projeto
+#
+# `cau-uni/` é o sistema do CAU/PR, com o próprio .git. Ele mora aqui como
+# referência de método (arquitetura, templatetags, rigor de acessibilidade) e
+# não pertence ao histórico do portfólio.
+#
+# O PDF da raiz é o currículo original, com acentos no nome do arquivo. O que
+# o site serve é a cópia em static/docs/curriculo-andre-gritten.pdf, essa sim
+# versionada.
+# ---------------------------------------------------------------------------
+/cau-uni/
+/*.pdf
+
+# ---------------------------------------------------------------------------
+# Diversos
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.pem
+npm-debug.log*
+.idea/
+.vscode/
+.claude/settings.local.json

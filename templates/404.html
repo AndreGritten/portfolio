@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load icones %}
+
+{% block titulo %}Página não encontrada — {{ PESSOA.nome }}{% endblock %}
+
+{% block corpo %}
+<main class="malha-tecnica flex min-h-svh items-center justify-center bg-gradient-to-b from-fundo via-breu to-onix px-6">
+  <div class="mx-auto max-w-md text-center">
+    {% include 'partials/monograma.html' with tamanho='lg' %}
+
+    <p class="rotulo mt-8 mb-3">Erro 404</p>
+    <h1 class="titulo-secao mb-4 text-3xl">Essa página não existe</h1>
+    <p class="mb-8 text-secundaria">
+      O endereço pode ter mudado, ou o link que trouxe você até aqui está
+      incompleto.
+    </p>
+
+    <a href="{% url 'portfolio:home' %}" class="btn-osso">
+      {% icone "ArrowRight" size=16 aria_hidden="true" %}
+      Ir para o início
+    </a>
+  </div>
+</main>
+{% endblock %}

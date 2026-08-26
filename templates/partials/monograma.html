@@ -1,0 +1,12 @@
+{% comment %}
+  O monograma "AG" — a marca do site.
+
+  Não é logotipo emprestado de lugar nenhum: são as iniciais em mono, dentro
+  de um quadrado de canto arredondado com contorno de carmim-claro. O contorno
+  usa o claro e não o laca porque aqui a cor é o sinal (regra 2): a 2,94:1 o
+  laca seria uma moldura que mal se enxerga.
+
+  Uso:
+    {% include 'partials/monograma.html' with tamanho='lg' %}
+{% endcomment %}
+<span class="monograma monograma-{{ tamanho|default:'md' }}" aria-hidden="true">{{ PESSOA.monograma }}</span>

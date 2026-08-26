@@ -1,0 +1,21 @@
+{% load icones %}
+{% comment %}
+  Os erros de um campo, com ícone.
+
+  Uso:
+    {% include 'partials/erros_campo.html' with campo=form.email %}
+
+  O ícone não é decoração: nesta paleta o vermelho de erro e o carmim da marca
+  são o mesmo matiz. Sem a forma, um campo com erro parece um campo com
+  destaque.
+{% endcomment %}
+{% if campo.errors %}
+  <div id="erro-{{ campo.auto_id }}">
+    {% for erro in campo.errors %}
+      <p class="erro-campo">
+        <span class="mt-0.5 flex-none">{% icone "AlertCircle" size=14 aria_hidden="true" %}</span>
+        <span>{{ erro }}</span>
+      </p>
+    {% endfor %}
+  </div>
+{% endif %}

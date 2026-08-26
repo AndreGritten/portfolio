@@ -1,0 +1,91 @@
+{% comment %}
+  A página de erro 500 NÃO estende a base e não usa nenhuma templatetag.
+
+  O motivo é o cenário: ela é renderizada justamente quando algo quebrou. Se
+  ela dependesse do context processor, de `{% icone %}` ou do banco, teria uma
+  chance real de quebrar também — e o visitante veria a página de erro padrão
+  do servidor, sem estilo nenhum, em vez desta.
+
+  Por isso as cores estão escritas à mão aqui dentro: se até o CSS falhar, a
+  página continua legível.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Erro no servidor</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0B0A0C;
+      color: #F2EDE6;
+      font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 1.5rem;
+    }
+    .caixa { max-width: 26rem; }
+    .marca {
+      display: inline-grid;
+      place-items: center;
+      width: 56px;
+      height: 56px;
+      border: 1.5px solid #E5566B;
+      border-radius: 14px;
+      color: #E5566B;
+      font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+    .rotulo {
+      font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #E5566B;
+      margin: 0 0 .75rem;
+    }
+    h1 {
+      font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -.02em;
+      line-height: .95;
+      margin: 0 0 1rem;
+    }
+    p { color: #A39BA8; line-height: 1.6; margin: 0 0 2rem; }
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 1.25rem;
+      border-radius: 12px;
+      background: #F2EDE6;
+      color: #0B0A0C;
+      font-weight: 600;
+      font-size: .9rem;
+      text-decoration: none;
+    }
+    a:hover { background: #FFFFFF; }
+    a:focus-visible { outline: 2px solid #E5566B; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <div class="caixa">
+    <span class="marca">AG</span>
+    <p class="rotulo">Erro 500</p>
+    <h1>Algo quebrou aqui dentro</h1>
+    <p>
+      O problema é do servidor, não do seu navegador. Já estou sabendo —
+      tente de novo daqui a pouco.
+    </p>
+    <a href="/">Voltar ao início</a>
+  </div>
+</body>
+</html>

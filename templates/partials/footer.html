@@ -1,0 +1,66 @@
+{% load icones %}
+<footer class="border-t border-borda bg-onix px-6 py-14">
+  <div class="mx-auto max-w-6xl">
+    <div class="mb-10 grid gap-10 md:grid-cols-3">
+
+      <div>
+        <a href="#topo" class="inline-flex items-center gap-3 no-underline transition-opacity hover:opacity-75">
+          {% include 'partials/monograma.html' with tamanho='sm' %}
+          <span class="font-display text-sm font-bold uppercase tracking-[-0.01em] text-osso">
+            {{ PESSOA.nome }}
+          </span>
+        </a>
+        <p class="mt-4 max-w-xs text-sm leading-relaxed text-secundaria">
+          {{ PESSOA.cargo }} e {{ PESSOA.formacao|lower }}, em {{ CONTATO.local }}.
+        </p>
+        <div class="mt-5 flex items-center gap-3 text-secundaria">
+          {% for rede in REDES_SOCIAIS %}
+            {% comment %}
+              Sem `.link-texto` aqui: o conteúdo é um ícone, e sublinhar um SVG
+              não comunica nada. O que identifica este link é a forma do
+              próprio ícone, mais o `aria-label`.
+            {% endcomment %}
+            <a href="{{ rede.href }}" target="_blank" rel="noopener"
+               aria-label="{{ rede.rotulo }}"
+               class="rounded-lg p-1.5 transition-colors hover:text-carmim-claro">
+              {% icone rede.icone size=19 %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <h2 class="rotulo rotulo-mudo mb-4">Seções</h2>
+        <ul class="space-y-2.5 text-sm text-secundaria">
+          {% for item in ITENS_MENU %}
+            <li><a href="{{ item.href }}" class="link-texto">{{ item.rotulo }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="rotulo rotulo-mudo mb-4">Contato</h2>
+        <div class="space-y-2 text-sm text-secundaria">
+          <p><a href="mailto:{{ CONTATO.email }}" class="link-texto">{{ CONTATO.email }}</a></p>
+          <p><a href="tel:{{ CONTATO.telefone_href }}" class="link-texto">{{ CONTATO.telefone }}</a></p>
+          <p class="flex items-center gap-1.5">
+            {% icone "MapPin" size=14 aria_hidden="true" %}
+            {{ CONTATO.local }}
+          </p>
+          <p class="pt-1">
+            <a href="{% url 'portfolio:curriculo' %}" class="link-texto inline-flex items-center gap-1.5">
+              {% icone "Download" size=14 aria_hidden="true" %}
+              Baixar currículo
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-borda pt-6 text-center">
+      <p class="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-secundaria">
+        © {% now "Y" %} {{ PESSOA.nome_completo }} · Django &amp; Tailwind
+      </p>
+    </div>
+  </div>
+</footer>
