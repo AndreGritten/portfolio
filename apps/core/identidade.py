@@ -11,7 +11,6 @@ Todos os valores vêm do currículo (`static/docs/curriculo-andre-gritten.pdf`).
 PESSOA = {
     'nome': 'André Gritten',
     'nome_completo': 'André Luiz da Silva Gritten',
-    'monograma': 'AG',
     'cargo': 'Desenvolvedor de Software Web',
     'formacao': 'Estudante de Engenharia de Software',
     'cidade': 'Curitiba',

@@ -228,6 +228,68 @@
       );
   }
 
+  /* O CAMPO — o hospedeiro do desenho reativo (static/js/campo.js).
+   *
+   * Se a malha é o papel, o campo é o que está desenhado nele. Vive nas
+   * mesmas três seções que a `.malha-tecnica` marca como as que respiram.
+   *
+   * O `sticky` no canvas é o ponto inteiro desta regra. O invólucro cobre a
+   * seção toda, e a seção de projetos fica GIGANTE quando o ScrollTrigger
+   * prende a esteira e injeta o espaçador. Um canvas `inset-0` ali dentro
+   * seria um buffer de vários milhares de pixels de altura — dezenas de MB
+   * para pintar um desenho que só se vê uma janela por vez. Preso ao topo,
+   * ele tem sempre a altura da tela, custe o que custar à seção.
+   *
+   * Consequência que precisa ficar escrita: o `overflow-hidden` que recorta
+   * o campo vai na <section>, NUNCA neste invólucro. Overflow entre o
+   * elemento preso e o contêiner de rolagem desliga o `sticky`. */
+  .campo {
+    @apply pointer-events-none absolute inset-0 z-0;
+  }
+
+  .campo > canvas {
+    @apply sticky top-0 block h-[100svh] w-full;
+  }
+
+  /* =====================================================================
+   * ESTEIRA DE PROJETOS — O REFÚGIO
+   *
+   * No desktop a esteira GRUDA e os cartões correm na horizontal. Isso só
+   * funciona enquanto o cartão mais alto couber na tela: presa, a seção não
+   * tem como mostrar o que passa da janela, e como `[data-esteira]` ainda é
+   * `overflow-hidden`, nada denuncia o corte. Um projeto com descrição longa
+   * e muitas tags chega lá num notebook.
+   *
+   * Quando o narrativa.js mede e vê que não cabe, ele desiste do pin e marca
+   * esta classe: a faixa passa a rolar na horizontal, no gesto nativo, com o
+   * encaixe pousando cartão a cartão. Perde-se o efeito; não se perde
+   * conteúdo. Era esse o defeito a corrigir.
+   * ================================================================== */
+
+  @media (min-width: 1024px) {
+    /* O seletor duplo é obrigatório, não estilo.
+     *
+     * `[data-esteira]` carrega a utilitária `overflow-hidden`, que tem a
+     * mesma especificidade de uma classe só — e a camada de utilitárias do
+     * Tailwind é emitida DEPOIS da de componentes. Empatado, ganha quem vem
+     * por último, e a rolagem nunca chegaria a existir. Com o atributo
+     * junto, a especificidade sobe para duas classes e a regra vence.
+     *
+     * `overflow-y` fica em `hidden` de propósito: só o eixo horizontal
+     * precisa rolar. */
+    [data-esteira].esteira-rolagem {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      /* O respiro para a sombra do hover não ser decepada pela borda da
+         faixa rolável. */
+      scroll-padding-inline: 1.5rem;
+    }
+
+    .esteira-rolagem [data-projeto] {
+      scroll-snap-align: start;
+    }
+  }
+
   /* =====================================================================
    * TIPOGRAFIA
    * ================================================================== */
@@ -288,6 +350,22 @@
   .link-texto {
     @apply underline underline-offset-[3px] decoration-1 decoration-carmim-claro
            transition-colors hover:text-osso hover:decoration-2;
+  }
+
+  /* Link de NAVEGAÇÃO, no rodapé. Sem sublinhado em repouso.
+   *
+   * Não é a regra do `.link-texto` sendo afrouxada — é ela sendo aplicada no
+   * contexto certo. O sublinhado permanente existe para o link perdido no
+   * meio de um parágrafo, onde nada além dele diz que ali há um link. Numa
+   * coluna de navegação isso já está dito pela lista: são cinco itens
+   * empilhados sob um título, todos links, e sublinhar os cinco vira ruído.
+   *
+   * O sublinhado volta no hover, e é de propósito: o retorno da interação
+   * não pode ser só a mudança de cor, porque quem não distingue vermelho
+   * ficaria sem retorno nenhum. */
+  .link-rodape {
+    @apply no-underline underline-offset-[3px] decoration-1 decoration-carmim-claro
+           transition-colors hover:text-osso hover:underline;
   }
 
   /* =====================================================================
@@ -396,19 +474,13 @@
   .msg-sucesso { @apply text-sucesso; }
   .msg-info    { @apply text-info; }
 
-  /* =====================================================================
-   * MONOGRAMA
-   * ================================================================== */
-
-  .monograma {
-    @apply grid place-items-center flex-none rounded-xl
-           border-[1.5px] border-carmim-claro text-carmim-claro
-           font-mono font-bold tracking-[0.03em] select-none;
-  }
-
-  .monograma-sm { @apply h-9 w-9 text-[0.7rem] rounded-lg; }
-  .monograma-md { @apply h-11 w-11 text-[0.82rem]; }
-  .monograma-lg { @apply h-14 w-14 text-base; }
+  /* O MONOGRAMA saiu daqui.
+   *
+   * Eram as iniciais em mono dentro de um quadrado de canto arredondado —
+   * um substituto que servia enquanto não existia marca. Agora existe:
+   * static/img/marca.svg, um glifo traçado, servido pelo partial
+   * `monograma.html`. Não sobrou classe a manter, e as três de tamanho
+   * saíram junto da safelist do tailwind.config.js. */
 
   /* =====================================================================
    * REVELAÇÃO POR ROLAGEM
@@ -420,9 +492,24 @@
    *
    * É a diferença entre uma página que degrada e uma página em branco.
    * ================================================================== */
+  /* O DESLOCAMENTO TEM UM TETO, e ele não é estético.
+   *
+   * `translateY` não tira o elemento do fluxo: o bloco continua ocupando a
+   * caixa dele e o desenho é que desce. Se a descida passar do gap da grade,
+   * o cartão ainda por revelar fica fisicamente DENTRO do cartão de baixo.
+   * Com opacidade zero ninguém vê — mas durante os 0,7s da animação a
+   * invasão aparece, e se o gatilho não disparar ela é permanente.
+   *
+   * Os 24px de antes estouravam os `gap-4` (16px) do "Sobre" e os `gap-5`
+   * (20px) dos certificados. 14px cabe embaixo do menor gap em uso na
+   * página, então nenhum cartão consegue invadir o vizinho — nem no pior
+   * caso, com o ScrollTrigger nunca disparando.
+   *
+   * A variável existe para quem quiser um deslocamento maior num bloco
+   * isolado: aumente o gap do contêiner na mesma medida, ou o defeito volta. */
   .movimento .revelar {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(var(--revelar-deslocamento, 14px));
   }
 
   .movimento .revelar-simples {

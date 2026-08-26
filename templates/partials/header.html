@@ -30,11 +30,14 @@
 >
   <div class="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
 
-    <a href="#topo" class="flex items-center gap-3 no-underline" aria-label="{{ PESSOA.nome }} — início">
+    {% comment %}
+      Só a marca, sem o nome ao lado. O nome já está no <h1> do topo, em corpo
+      grande — repeti-lo aqui era dizer duas vezes a mesma coisa a dois metros
+      de distância. O `aria-label` mantém o destino do link dito para quem não
+      vê a marca, que é o que o texto fazia de útil.
+    {% endcomment %}
+    <a href="#topo" class="flex items-center no-underline" aria-label="{{ PESSOA.nome }} — início">
       {% include 'partials/monograma.html' with tamanho='sm' %}
-      <span class="hidden font-display text-sm font-bold uppercase tracking-[-0.01em] text-osso sm:block">
-        {{ PESSOA.nome }}
-      </span>
     </a>
 
     {# Navegação de âncoras — desktop #}

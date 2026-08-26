@@ -246,8 +246,38 @@
   if (esteira && trilho) {
     var animacaoTrilho = null
 
+    /* A esteira só pode grudar se couber na tela.
+     *
+     * Presa, a seção mostra exatamente uma janela e nada mais: o que passar
+     * da altura não tem como ser alcançado, porque a rolagem que sobra está
+     * comprometida com o deslocamento horizontal. E como `[data-esteira]` é
+     * `overflow-hidden`, o corte não deixa rastro — o cartão simplesmente
+     * termina no nada.
+     *
+     * Todos os cartões esticam para a altura do mais alto (`h-full` num flex
+     * row), então basta UM projeto com descrição longa e muitas tags para
+     * levar a fila inteira além da janela. Num notebook isso não é hipótese.
+     *
+     * Não cabendo, a esteira desiste de grudar e vira uma faixa de rolagem
+     * horizontal nativa, com encaixe cartão a cartão (`.esteira-rolagem`, em
+     * theme/input.css). Perde-se o efeito; não se perde conteúdo. */
+    var MARGEM_DE_ALTURA = 0.92
+
+    function esteiraCabe() {
+      return esteira.offsetHeight <= window.innerHeight * MARGEM_DE_ALTURA
+    }
+
     ScrollTrigger.matchMedia({
       '(min-width: 1024px)': function () {
+        if (!esteiraCabe()) {
+          esteira.classList.add('esteira-rolagem')
+          return function () {
+            esteira.classList.remove('esteira-rolagem')
+          }
+        }
+
+        esteira.classList.remove('esteira-rolagem')
+
         animacaoTrilho = gsap.to(trilho, {
           /* Funções, e não números: com `invalidateOnRefresh` elas são
              recalculadas a cada refresh. É o que faz o filtro de tecnologia
@@ -263,6 +293,23 @@
             pin: true,
             scrub: 1,
             invalidateOnRefresh: true,
+            /* A PRIORIDADE É UMA CORREÇÃO, não um ajuste fino.
+             *
+             * Prender injeta um espaçador que ACRESCENTA altura ao
+             * documento. Este gatilho é criado por último — depois das
+             * revelações, dos contadores e do parallax —, então todos eles
+             * já mediram suas posições sobre um documento mais curto do que
+             * o que vai existir de fato.
+             *
+             * O sintoma não é a animação sair torta: `.revelar` nasce em
+             * opacidade zero, então um gatilho medido no lugar errado APAGA
+             * o bloco. Tudo abaixo dos projetos — habilidades, contato,
+             * rodapé — estava sujeito a isso.
+             *
+             * Com prioridade maior que o padrão (0), a GSAP atualiza este
+             * gatilho primeiro e os demais medem o documento já com o
+             * espaçador no lugar. */
+            refreshPriority: 1,
             end: function () {
               return '+=' + (trilho.scrollWidth - esteira.offsetWidth)
             },
@@ -320,9 +367,14 @@
     document.querySelectorAll('.revelar, .revelar-simples').forEach(function (el) {
       if (parseFloat(getComputedStyle(el).opacity) > 0.01) return
 
-      var caixa = el.getBoundingClientRect()
-      var naTela = caixa.top < window.innerHeight && caixa.bottom > 0
-      if (naTela) atrasados.push(el)
+      /* `top < innerHeight` sozinho, sem o `bottom > 0` que havia aqui.
+         O teste antigo só resgatava o que estava DENTRO da tela — quem
+         rolasse depressa passava por um bloco invisível e o deixava
+         invisível para sempre, porque o gatilho é `once: true` e a rede
+         nunca mais roda. Agora tudo que já foi alcançado pela rolagem
+         entra, inclusive o que ficou para trás. */
+      var alcancado = el.getBoundingClientRect().top < window.innerHeight
+      if (alcancado) atrasados.push(el)
     })
 
     if (atrasados.length) {
