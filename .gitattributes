@@ -1,0 +1,47 @@
+# Normalização de fim de linha.
+#
+# Por padrão o Git guarda tudo com LF e entrega no fim de linha nativo de quem
+# clona. As exceções abaixo existem por motivos concretos.
+
+* text=auto
+
+# ---------------------------------------------------------------------------
+# Precisa de LF SEMPRE, inclusive no disco de quem trabalha no Windows
+# ---------------------------------------------------------------------------
+
+# O `build.sh` é executado pelo Render, em Linux. Com CRLF, o `\r` entra no
+# nome do interpretador e o deploy quebra com "bad interpreter: /usr/bin/env
+# bash^M" — um erro que não diz nada sobre a causa e não acontece na máquina
+# de quem commitou.
+*.sh text eol=lf
+
+# O Procfile é lido pelo mesmo processo.
+Procfile text eol=lf
+
+# ---------------------------------------------------------------------------
+# Binários — o Git já detecta a maioria, mas dizer é mais barato que descobrir
+# ---------------------------------------------------------------------------
+*.woff2 binary
+*.woff binary
+*.ttf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# ---------------------------------------------------------------------------
+# Gerados — o diff deles não ajuda ninguém a revisar
+#
+# `linguist-generated` esconde o conteúdo por padrão no GitHub e tira os
+# arquivos da estatística de linguagens do repositório. Eles continuam
+# versionados (é o que permite rodar o site sem Node); só não poluem a
+# revisão nem fazem o portfólio parecer um projeto de CSS.
+# ---------------------------------------------------------------------------
+static/css/app.css linguist-generated=true
+static/css/fontes.css linguist-generated=true
+apps/core/icones.json linguist-generated=true
+static/js/alpine.min.js linguist-vendored=true
+static/js/vendor/* linguist-vendored=true
+package-lock.json linguist-generated=true
