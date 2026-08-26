@@ -1,0 +1,464 @@
+/*
+ * Fonte do CSS do portfólio — Ônix & Carmim.
+ *
+ * Compilar com:
+ *   npm run css
+ *
+ * O resultado (static/css/app.css) é versionado: quem clona o repositório roda
+ * o site sem instalar Node.
+ *
+ * As fontes NÃO entram aqui. Elas vivem em static/css/fontes.css, gerado por
+ * `npm run fontes` e carregado antes deste arquivo — assim regerar as fontes
+ * nunca conflita com uma alteração de componente.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* =====================================================================
+   * A RAMPA
+   *
+   * Canais RGB separados por espaço, porque é o formato que o
+   * `rgb(var(--x) / <alpha-value>)` do tailwind.config exige — é ele que
+   * mantém `bg-onix/85` e `border-osso/10` funcionando.
+   *
+   * Os valores estão conferidos por tools/conferir_cores.py. Mudar um aqui
+   * sem rodar o conferidor reprova o build.
+   * ================================================================== */
+
+  /* Superfícies. Um matiz só, variando claridade — é o que mantém a página
+     escura sem que ela vire preta, e o que faz a escada de seções ler como
+     profundidade em vez de como cores diferentes. */
+  --onix:  11 10 12;    /* #0B0A0C — corpo da página */
+  --breu:  20 18 22;    /* #141216 — seções alternadas */
+  --fundo: 30 27 34;    /* #1E1B22 — cartões e painéis */
+
+  /* Fios. Dois, e não um, porque têm exigências diferentes:
+     `borda` apenas SEPARA superfícies e não precisa passar em nada;
+     `borda-forte` DELIMITA um controle (campo, botão de contorno) e a
+     WCAG 1.4.11 pede 3:1 para isso. Ver a regra 4 mais abaixo. */
+  --borda:       50 45 56;   /* #322D38 — decorativo, 1,48:1 */
+  --borda-forte: 114 105 128; /* #726980 — contorno de controle, 3,28:1 */
+
+  /* O ACENTO, EM DOIS PAPÉIS.
+     Esta é a decisão central da paleta e a razão dela é medida, não estética:
+     o carmim laca dá 2,94:1 como texto sobre o fundo dos cartões, contra um
+     piso de 4,5:1. Clarear o vermelho até passar sozinho o transformaria em
+     rosa e destruiria a qualidade fosca que define a marca. Então são dois
+     tokens com papéis fixos — ver as quatro regras logo abaixo. */
+  --carmim:       194 38 60;   /* #C2263C — SÓ preenchimento */
+  --carmim-claro: 229 86 107;  /* #E5566B — texto, fio, marcador, link */
+
+  /* Tinta. */
+  --osso:       242 237 230;  /* #F2EDE6 — 14,60:1 na pior superfície */
+  --secundaria: 163 155 168;  /* #A39BA8 — 6,32:1 */
+
+  /* =====================================================================
+   * ESTADOS
+   *
+   * Um problema que esta paleta tem e convém deixar escrito: a cor de erro é
+   * VERMELHA e o acento da marca também. Quem não distingue vermelho não
+   * separa os dois. Por isso nenhuma mensagem de estado depende só de cor —
+   * cada uma leva ícone, e o campo com erro engrossa a borda para 2px. A cor
+   * é o reforço, nunca o sinal.
+   * ================================================================== */
+  --erro:    255 128 128;  /* #FF8080 — 7,00:1 */
+  --aviso:   240 184 78;   /* #F0B84E — 9,45:1 */
+  --sucesso: 111 207 151;  /* #6FCF97 — 8,95:1 */
+  --info:    143 180 240;  /* #8FB4F0 — 8,06:1 */
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  /* `scroll-behavior: smooth` fica DESLIGADO aqui de propósito.
+   *
+   * Quem faz a rolagem suave é o Lenis (static/js/narrativa.js). Com os dois
+   * ligados, toda restauração de posição feita pelo ScrollTrigger durante um
+   * refresh vira uma animação nativa brigando com a do Lenis, e a página
+   * escorrega sozinha. Onde o Lenis não roda, as âncoras caem no salto
+   * instantâneo do navegador, que é o comportamento correto. */
+  html {
+    scroll-behavior: auto;
+    /* O cabeçalho é fixo: sem isto, saltar para #projetos deixa o título da
+       seção escondido atrás dele. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    @apply bg-onix text-osso/80 font-sans antialiased;
+    /* Liga o eixo óptico da Bricolage Grotesque, que é o que faz os títulos
+       grandes fecharem o espacejamento sozinhos. */
+    font-optical-sizing: auto;
+  }
+
+  /* A seleção usa o laca como PREENCHIMENTO, com osso em cima: 4,96:1.
+     É exatamente o papel que a regra 1 reserva a ele. */
+  ::selection {
+    @apply bg-carmim text-osso;
+  }
+
+  /* Foco visível por teclado, global.
+     `focus-visible` e não `focus`: assim o contorno não aparece no clique de
+     mouse, e o visual do dia a dia continua limpo. O anel é carmim-claro
+     porque `carmim` a 2,94:1 sobre um cartão seria um contorno que mal se
+     enxerga — justamente para quem mais depende dele. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-carmim-claro ring-offset-2 ring-offset-onix;
+    border-radius: 6px;
+  }
+
+  /* Barra de rolagem no tom da página. Sem isto o Windows desenha uma faixa
+     branca de 15px na lateral de uma página que é escura de ponta a ponta. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--borda-forte)) rgb(var(--onix));
+  }
+
+  /* `x-cloak` some assim que o Alpine inicia. Sem esta regra, um elemento que
+     só deve aparecer sob condição — a mensagem de "nenhum projeto com este
+     filtro" — pisca na tela entre a pintura e a inicialização do Alpine. */
+  [x-cloak] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* =====================================================================
+   * BOTÕES
+   *
+   * Três, com hierarquia explícita:
+   *   .btn-osso    a chamada principal — a coisa mais clara da tela
+   *   .btn-carmim  a secundária, e a ÚNICA superfície carmim da página
+   *   .btn-linha   terciária, contorno de osso
+   *
+   * Altura mínima de 44px em todos: é o alvo de toque confortável no celular.
+   * ================================================================== */
+
+  .btn-osso {
+    @apply bg-osso text-onix px-5 py-2.5 rounded-xl font-semibold text-sm min-h-11
+           shadow-sm shadow-black/30 hover:bg-white hover:shadow-md
+           active:scale-95 transition-all duration-200
+           inline-flex items-center justify-center gap-2;
+  }
+
+  /* REGRA 1 — o laca só preenche.
+     Osso sobre #C2263C dá 4,96:1. É o único uso do tom cheio que passa. */
+  .btn-carmim {
+    @apply bg-carmim text-osso px-5 py-2.5 rounded-xl font-semibold text-sm min-h-11
+           shadow-sm shadow-black/30 hover:bg-carmim-claro hover:text-onix hover:shadow-md
+           active:scale-95 transition-all duration-200
+           inline-flex items-center justify-center gap-2;
+  }
+
+  /* REGRA 3 — bloco carmim não pousa em cartão.
+     Contra o #1E1B22 dos cartões o laca dá 2,94:1, abaixo do piso de 3:1 para
+     o contorno de um controle. Onde o botão precisa ficar sobre um cartão,
+     esta classe devolve a delimitação com 1px de carmim-claro (4,76:1). */
+  .btn-carmim-em-cartao {
+    @apply border border-carmim-claro;
+  }
+
+  .btn-linha {
+    @apply border-2 border-osso/40 text-osso px-5 py-2.5 rounded-xl font-semibold text-sm min-h-11
+           hover:border-osso hover:bg-osso/5
+           active:scale-95 transition-all duration-200
+           inline-flex items-center justify-center gap-2;
+  }
+
+  .btn-osso:disabled,
+  .btn-carmim:disabled,
+  .btn-linha:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-osso:disabled:hover { @apply bg-osso shadow-sm; }
+  .btn-carmim:disabled:hover { @apply bg-carmim text-osso shadow-sm; }
+  .btn-linha:disabled:hover { @apply border-osso/40 bg-transparent; }
+
+  .btn-osso:disabled:active,
+  .btn-carmim:disabled:active,
+  .btn-linha:disabled:active {
+    @apply scale-100;
+  }
+
+  /* =====================================================================
+   * SUPERFÍCIES
+   * ================================================================== */
+
+  /* Sem `backdrop-blur`: vidro fosco é a assinatura visual de landing de
+     tecnologia genérica, e o desfoque ainda custa uma camada de composição
+     por quadro em toda rolagem. Um véu de osso a 4% sobre o ônix faz o mesmo
+     trabalho de descolar o cartão do fundo. */
+  .card {
+    @apply bg-osso/[0.04] border border-borda rounded-2xl;
+  }
+
+  .card-interativo {
+    @apply transition-all duration-200
+           hover:bg-osso/[0.07] hover:border-carmim-claro/40
+           hover:shadow-lg hover:shadow-black/40;
+  }
+
+  /* A grade de prancha, no fundo das seções que respiram.
+   *
+   * Existe por um motivo concreto, não decorativo: um campo chapado e escuro
+   * do tamanho da tela lê como VAZIO, e vazio escuro é o que dá à página o ar
+   * de template. A malha dá superfície — o olho entende que ali tem papel.
+   *
+   * Dois gradientes repetidos, sem imagem e sem elemento extra: o navegador
+   * pinta isso no mesmo passo do fundo. A 5,5% a linha é quase subliminar,
+   * que é o ponto — some quando se lê o texto e aparece quando se olha a
+   * seção. */
+  .malha-tecnica {
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        rgba(242, 237, 230, 0.055) 0 1px,
+        transparent 1px 56px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        rgba(242, 237, 230, 0.055) 0 1px,
+        transparent 1px 56px
+      );
+  }
+
+  /* =====================================================================
+   * TIPOGRAFIA
+   * ================================================================== */
+
+  /* CAIXA-ALTA, e o espacejamento muda por causa disso.
+   *
+   * Em maiúsculas não há ascendente nem descendente para abrir o ritmo, então
+   * o -.04em que serve à caixa mista aperta as versais umas nas outras. Aqui
+   * é -.02em, e a entrelinha fecha junto.
+   *
+   * O `text-transform` fica no CSS, NUNCA no conteúdo: o banco guarda
+   * "Sistema de registro CAU-Uni" com a grafia normal e quem grita é a folha
+   * de estilo. Gravar em maiúsculas faria leitor de tela soletrar as siglas
+   * letra por letra. */
+  .titulo-display {
+    @apply font-display font-extrabold uppercase text-osso;
+    letter-spacing: -0.02em;
+    line-height: 0.92;
+    text-wrap: balance;
+  }
+
+  .titulo-secao {
+    @apply font-display font-semibold uppercase text-osso;
+    letter-spacing: -0.015em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  /* Títulos de cartão ficam em caixa MISTA. Se tudo gritasse, nada gritaria —
+     e um nome de projeto em versais perde as maiúsculas que significam algo
+     (CAU-Uni, SQL, PUCPR). */
+  .titulo-cartao {
+    @apply font-display font-semibold text-osso;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+  }
+
+  /* A sobrancelha em mono, acima dos títulos. */
+  .rotulo {
+    @apply font-mono text-[0.65rem] font-bold uppercase tracking-[0.18em] text-carmim-claro;
+  }
+
+  .rotulo-mudo {
+    @apply text-secundaria;
+  }
+
+  /* O fio de 3px sob o nome e sob os títulos.
+     REGRA 2 — carmim-claro, não laca: aqui a cor é o sinal, e precisa de 3:1
+     como elemento gráfico. O claro dá 4,76:1 na pior superfície. */
+  .fio-acento {
+    @apply h-[3px] w-20 rounded-sm bg-carmim-claro;
+  }
+
+  /* Link dentro de texto corrido.
+     Sublinhado PERMANENTE, e não `hover:underline`: o reforço tem de existir
+     antes da interação, não como recompensa por ela. Quem não passa o mouse
+     (ou não tem mouse) precisa saber que ali há um link. */
+  .link-texto {
+    @apply underline underline-offset-[3px] decoration-1 decoration-carmim-claro
+           transition-colors hover:text-osso hover:decoration-2;
+  }
+
+  /* =====================================================================
+   * TAGS DE TECNOLOGIA
+   * ================================================================== */
+
+  .tag {
+    @apply font-mono text-[0.67rem] font-medium uppercase tracking-[0.09em]
+           px-2.5 py-1 rounded-md
+           border border-osso/15 bg-osso/[0.05] text-secundaria
+           inline-flex items-center gap-1.5 whitespace-nowrap;
+  }
+
+  .tag-ac {
+    @apply text-carmim-claro border-carmim-claro/50;
+  }
+
+  /* Botão do filtro de projetos. O estado ativo muda a FORMA além da cor —
+     borda mais grossa e peso de fonte —, porque num filtro de vermelho sobre
+     vermelho a cor sozinha não separa. O `aria-pressed` vai no template. */
+  .tag-filtro {
+    @apply font-mono text-[0.68rem] font-medium uppercase tracking-[0.09em]
+           px-3 py-1.5 min-h-9 rounded-lg
+           border-2 border-osso/15 bg-transparent text-secundaria
+           hover:border-osso/35 hover:text-osso
+           transition-all duration-200 cursor-pointer
+           inline-flex items-center gap-1.5 whitespace-nowrap;
+  }
+
+  .tag-filtro.tag-ativa {
+    @apply border-carmim-claro text-carmim-claro bg-carmim-claro/10 font-bold;
+  }
+
+  /* =====================================================================
+   * LINHA DO TEMPO
+   * ================================================================== */
+
+  .tl-eixo {
+    @apply absolute left-[7px] top-2 bottom-2 w-px bg-borda;
+  }
+
+  .tl-marca {
+    @apply relative z-10 mt-1.5 h-[15px] w-[15px] flex-none rounded-full
+           border-2 border-carmim-claro bg-onix;
+  }
+
+  /* Entrada em curso: o marcador PREENCHE. Muda a forma, não só o matiz —
+     quem não distingue vermelho ainda vê um círculo cheio contra vazados. */
+  .tl-marca-atual {
+    @apply bg-carmim;
+  }
+
+  /* =====================================================================
+   * FORMULÁRIO
+   * ================================================================== */
+
+  /* REGRA 4 — campo tem borda própria.
+     A `borda` decorativa dá 1,48:1: separa superfícies, mas não delimita um
+     controle. `borda-forte` dá 3,28:1, que é o piso da WCAG 1.4.11.
+     `text-base` no mobile evita o zoom automático do iOS, que dispara em
+     fontes menores que 16px. */
+  .input-base {
+    @apply w-full rounded-xl px-4 py-3 text-base sm:text-sm
+           border border-borda-forte bg-osso/[0.04] text-osso
+           placeholder:text-secundaria/60
+           hover:border-osso/50
+           focus:outline-none focus:bg-osso/[0.07] focus:border-carmim-claro
+           focus:ring-2 focus:ring-carmim-claro/60 focus:ring-offset-2 focus:ring-offset-onix
+           transition-all duration-200;
+  }
+
+  /* O preenchimento automático do Chrome pinta o campo de branco e ignora
+     `background-color`; a sombra interna é a única forma de cobrir. */
+  .input-base:-webkit-autofill,
+  .input-base:-webkit-autofill:hover,
+  .input-base:-webkit-autofill:focus {
+    -webkit-text-fill-color: #F2EDE6;
+    -webkit-box-shadow: 0 0 0 1000px #1E1B22 inset;
+    caret-color: #F2EDE6;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  .label-base {
+    @apply block text-sm font-medium text-secundaria mb-2;
+  }
+
+  /* Campo com erro.
+     `border-2` e não só a troca de matiz: a borda ENGROSSA, e isso se enxerga
+     em qualquer visão de cores, inclusive em preto e branco. É o que separa o
+     campo errado dos outros para quem não distingue o vermelho — e nesta
+     paleta isso importa o dobro, porque o acento da marca também é vermelho. */
+  .input-erro {
+    @apply border-2 border-erro;
+  }
+
+  .input-erro:focus {
+    @apply border-erro ring-erro/60;
+  }
+
+  .erro-campo {
+    @apply mt-1.5 flex items-start gap-1.5 text-sm text-erro;
+  }
+
+  .msg-erro    { @apply text-erro; }
+  .msg-aviso   { @apply text-aviso; }
+  .msg-sucesso { @apply text-sucesso; }
+  .msg-info    { @apply text-info; }
+
+  /* =====================================================================
+   * MONOGRAMA
+   * ================================================================== */
+
+  .monograma {
+    @apply grid place-items-center flex-none rounded-xl
+           border-[1.5px] border-carmim-claro text-carmim-claro
+           font-mono font-bold tracking-[0.03em] select-none;
+  }
+
+  .monograma-sm { @apply h-9 w-9 text-[0.7rem] rounded-lg; }
+  .monograma-md { @apply h-11 w-11 text-[0.82rem]; }
+  .monograma-lg { @apply h-14 w-14 text-base; }
+
+  /* =====================================================================
+   * REVELAÇÃO POR ROLAGEM
+   *
+   * O estado inicial escondido só vale quando o JavaScript está de fato
+   * comandando: `narrativa.js` marca <html class="movimento"> antes de
+   * qualquer pintura. Sem essa marca — JS desligado, script que falhou,
+   * movimento reduzido — os elementos nascem visíveis.
+   *
+   * É a diferença entre uma página que degrada e uma página em branco.
+   * ================================================================== */
+  .movimento .revelar {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  .movimento .revelar-simples {
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}
+
+/* ---------------------------------------------------------------------
+ * MOVIMENTO REDUZIDO
+ *
+ * A regra mais importante deste arquivo, e a razão é aritmética: sem ela,
+ * quem pediu menos movimento receberia uma seção de projetos grudada na tela
+ * e blocos invisíveis esperando um gatilho que nunca dispara.
+ *
+ * O narrativa.js confere a mesma preferência e simplesmente não inicia o
+ * Lenis nem registra os pins; isto aqui é o cinto de segurança do CSS, para
+ * o caso de o JS já ter marcado a classe antes de a preferência ser lida.
+ * ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .movimento .revelar,
+  .movimento .revelar-simples {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

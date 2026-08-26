@@ -1,0 +1,61 @@
+# Dependências do portfólio de André Gritten.
+#
+# Instalação:  pip install -r requirements.txt
+#
+# O build do Tailwind, a extração dos ícones e o download das fontes dependem
+# de Node, mas não estão aqui: o CSS compilado, o icones.json e os .woff2 são
+# versionados, então rodar o projeto exige só Python. Ver package.json.
+#
+# ATENÇÃO ao regravar este arquivo com `pip freeze`: no PowerShell, o
+# redirecionamento `>` grava em UTF-16, e o arquivo perde os comentários que
+# explicam cada pino. Se precisar atualizar as versões, use
+#   pip freeze | Out-File -Encoding utf8 requirements-travado.txt
+# e traga as mudanças para cá à mão.
+
+# ---------------------------------------------------------------------------
+# Aplicação
+# ---------------------------------------------------------------------------
+Django==6.0.2
+
+# Tema do Django Admin. É o que dá ao painel a mesma sensação de produto que
+# o site tem — sem ele o admin continua funcionando, com a cara padrão.
+django-jazzmin==3.0.5
+
+# Lê o .env sem exigir que o arquivo exista.
+python-decouple==3.8
+
+# ---------------------------------------------------------------------------
+# Produção
+# ---------------------------------------------------------------------------
+
+# Servidor WSGI (Render, via Procfile).
+gunicorn==23.0.0
+
+# Serve os arquivos estáticos sem precisar de nginx.
+whitenoise==6.9.0
+
+# Lê DATABASE_URL e devolve o dicionário DATABASES. Sem a variável o projeto
+# cai em SQLite, o que mantém `git clone && migrate && runserver` como caminho
+# de um passo só.
+dj-database-url==2.3.0
+
+# Driver do PostgreSQL (psycopg 3). O Django 6 o usa automaticamente com o
+# ENGINE `django.db.backends.postgresql` quando ele está instalado.
+#
+# A versão importa por causa das wheels: a 3.2.9 não publica binário para o
+# CPython 3.14, que é o interpretador desta máquina, e o `pip install` falhava
+# tentando compilar do zero. A 3.2.13 cobre 3.12 (o runtime do Render) e 3.14.
+psycopg[binary]==3.2.13
+
+# ---------------------------------------------------------------------------
+# Mídia
+# ---------------------------------------------------------------------------
+
+# Processamento das imagens de projeto enviadas pelo admin (ImageField).
+# Também é o que tools/gerar_og.py usa para desenhar o card de compartilhamento.
+pillow==12.1.0
+
+# Armazenamento de mídia no Cloudinary. O disco do Render é efêmero: sem isto,
+# toda imagem e todo PDF enviados pelo admin somem no deploy seguinte.
+django-cloudinary-storage==0.3.0
+cloudinary==1.44.1

@@ -1,0 +1,151 @@
+{% load icones %}
+{% comment %}
+  Cabeçalho fixo.
+
+  Nasce transparente sobre o topo e ganha fundo ao rolar. O estado inicial é
+  renderizado pelo servidor (`bg-transparent`) e o `:class` usa a forma de
+  OBJETO — a única em que o Alpine também REMOVE a classe quando a condição
+  fica falsa. Com o ternário, as classes vindas do atributo `class` estático
+  ficariam grudadas e brigariam com as novas ao rolar de volta ao topo.
+
+  Duas escolhas existem por causa de um flash claro, e mexer nelas o traz de
+  volta:
+
+  1. `transition-colors`, e não `transition-all`. O preflight do Tailwind
+     declara `border: 0 solid #e5e7eb` em TODO elemento — cinza quase branco,
+     opaco. Animando `all`, a borda ia de 0 a 1px enquanto a cor ia de #e5e7eb
+     para osso a 10%: uma linha clara da largura da tela acendendo e apagando
+     a cada rolagem.
+  2. A borda está SEMPRE presente (`border-b`), alternando só entre
+     transparente e osso a 10%. A largura nunca anima.
+{% endcomment %}
+
+<header
+  x-data="cabecalho"
+  class="fixed inset-x-0 top-0 z-50 border-b border-transparent bg-transparent transition-colors duration-300"
+  :class="{
+    'bg-onix/85': solido, 'backdrop-blur-md': solido, 'border-borda': solido,
+    'bg-transparent': !solido, 'border-transparent': !solido
+  }"
+>
+  <div class="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
+
+    <a href="#topo" class="flex items-center gap-3 no-underline" aria-label="{{ PESSOA.nome }} — início">
+      {% include 'partials/monograma.html' with tamanho='sm' %}
+      <span class="hidden font-display text-sm font-bold uppercase tracking-[-0.01em] text-osso sm:block">
+        {{ PESSOA.nome }}
+      </span>
+    </a>
+
+    {# Navegação de âncoras — desktop #}
+    <nav class="ml-auto hidden items-center gap-1 lg:flex" aria-label="Seções da página">
+      {% for item in ITENS_MENU %}
+        <a href="{{ item.href }}"
+           data-secao="{{ item.href }}"
+           class="item-menu rounded-lg px-3 py-2 text-sm font-medium text-secundaria transition-colors hover:text-osso">
+          {{ item.rotulo }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="ml-auto flex items-center gap-2 lg:ml-4">
+      <a href="{% url 'portfolio:curriculo' %}"
+         class="btn-osso hidden !min-h-10 !px-4 !py-2 !text-xs sm:inline-flex">
+        {% icone "Download" size=15 aria_hidden="true" %}
+        Currículo
+      </a>
+
+      {% comment %}
+        `x-html` em vez de dois `<template x-if>`: mantém o botão com
+        exatamente um filho em qualquer estado, e o ícone inicial já vem
+        renderizado pelo servidor — sem o piscar de um botão vazio até o
+        Alpine iniciar.
+
+        TUDO aqui fala com o store pelo nome completo, e isso não é estilo: o
+        `x-data` logo abaixo (que guarda os dois SVGs) cria um escopo NOVO,
+        que sombreia o do <header>. Escrever `menuAberto` solto procurava a
+        variável no escopo do botão, não achava, e o "menuAberto is not
+        defined" derrubava a inicialização do Alpine na página inteira — sem
+        menu, sem toasts, sem modal, sem filtro. Um erro de escopo num
+        atributo custou todos os componentes.
+      {% endcomment %}
+      <button
+        type="button"
+        @click="$store.cabecalho.alternarMenu()"
+        :aria-expanded="$store.cabecalho.menuAberto ? 'true' : 'false'"
+        aria-controls="menu-movel"
+        aria-label="Menu"
+        class="flex h-10 w-10 items-center justify-center rounded-lg text-osso transition-colors hover:bg-osso/10 lg:hidden"
+        x-data="{
+          svgMenu: '{% filter escapejs %}{% icone "Menu" size=22 %}{% endfilter %}',
+          svgFechar: '{% filter escapejs %}{% icone "X" size=22 %}{% endfilter %}'
+        }"
+        x-html="$store.cabecalho.menuAberto ? svgFechar : svgMenu"
+      >{% icone "Menu" size=22 %}</button>
+    </div>
+  </div>
+</header>
+
+{# Menu deslizante — celular e tablet #}
+<div
+  x-data
+  id="menu-movel"
+  {% comment %}
+    `overflow-hidden` não é zelo: o painel de dentro fica em
+    `translate-x-full` enquanto fechado, ou seja, uma tela inteira à direita
+    da borda. Sem recortar aqui, essa largura entra no documento e a página
+    ganha rolagem horizontal no celular — o texto do topo aparece cortado e
+    ninguém liga uma coisa à outra.
+  {% endcomment %}
+  class="fixed inset-0 z-40 overflow-hidden opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
+  :class="{
+    'opacity-100': $store.cabecalho.menuAberto, 'pointer-events-auto': $store.cabecalho.menuAberto,
+    'opacity-0': !$store.cabecalho.menuAberto, 'pointer-events-none': !$store.cabecalho.menuAberto
+  }"
+  @keydown.escape.window="$store.cabecalho.fecharMenu()"
+>
+  <div class="absolute inset-0 bg-black/60" @click="$store.cabecalho.fecharMenu()"></div>
+
+  <nav
+    class="absolute right-0 top-0 flex h-full w-full max-w-xs translate-x-full flex-col border-l border-borda bg-breu shadow-2xl transition-transform duration-300"
+    :class="{ 'translate-x-0': $store.cabecalho.menuAberto, 'translate-x-full': !$store.cabecalho.menuAberto }"
+    aria-label="Seções da página"
+  >
+    <div class="flex items-center justify-between border-b border-borda px-6 py-5">
+      {% include 'partials/monograma.html' with tamanho='sm' %}
+      <button type="button"
+              @click="$store.cabecalho.fecharMenu()"
+              aria-label="Fechar menu"
+              class="flex h-10 w-10 items-center justify-center rounded-lg text-secundaria transition-colors hover:bg-osso/10 hover:text-osso">
+        {% icone "X" size=20 %}
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-3">
+      {% for item in ITENS_MENU %}
+        <a href="{{ item.href }}"
+           @click="$store.cabecalho.fecharMenu()"
+           class="flex min-h-11 items-center justify-between px-6 py-3.5 text-sm font-medium text-secundaria transition-colors hover:bg-osso/5 hover:text-osso">
+          {{ item.rotulo }}
+          {% icone "ChevronRight" size=15 class="text-borda-forte" aria_hidden="true" %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="space-y-3 border-t border-borda p-6">
+      <a href="{% url 'portfolio:curriculo' %}" class="btn-osso w-full justify-center">
+        {% icone "Download" size=16 aria_hidden="true" %}
+        Baixar currículo
+      </a>
+      <div class="flex items-center justify-center gap-4 pt-1 text-secundaria">
+        {% for rede in REDES_SOCIAIS %}
+          <a href="{{ rede.href }}" target="_blank" rel="noopener"
+             aria-label="{{ rede.rotulo }}"
+             class="rounded-lg p-2 transition-colors hover:text-carmim-claro">
+            {% icone rede.icone size=20 %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </nav>
+</div>

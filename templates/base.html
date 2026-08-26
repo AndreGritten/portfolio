@@ -1,0 +1,77 @@
+{% load static estaticos %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{% block titulo %}{{ PESSOA.nome }} — {{ PESSOA.cargo }}{% endblock %}</title>
+  <meta name="description" content="{% block descricao %}Portfólio de {{ PESSOA.nome }}, {{ PESSOA.cargo|lower }} e {{ PESSOA.formacao|lower }} em {{ PESSOA.cidade }}. Projetos, trajetória e certificações.{% endblock %}">
+  <meta name="author" content="{{ PESSOA.nome_completo }}">
+  <meta name="theme-color" content="#0B0A0C">
+
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+
+  {% comment %}
+    Open Graph e Twitter: o portfólio é feito para ser COMPARTILHADO — num
+    e-mail de candidatura, numa mensagem de recrutador. Um link que chega sem
+    prévia parece um link quebrado.
+  {% endcomment %}
+  <meta property="og:type" content="profile">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="{{ PESSOA.nome }} — {{ PESSOA.cargo }}">
+  <meta property="og:description" content="{{ PESSOA.chamada }}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-image.png' %}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  {% comment %}
+    As fontes vêm ANTES do app.css e num arquivo próprio, gerado por
+    `npm run fontes`. Separados, regerar as fontes nunca conflita com uma
+    alteração de componente — e o @font-face precisa ser conhecido antes da
+    primeira regra que pede a família.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% estatico 'css/fontes.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/app.css' %}">
+
+  {% comment %}
+    Sem `defer`, e de propósito: este arquivo marca <html class="movimento">
+    na hora em que a linha é analisada, antes de qualquer pintura. É essa
+    classe que esconde os elementos que o ScrollTrigger vai revelar. Com
+    `defer`, a página apareceria por um instante com tudo visível e só depois
+    esconderia — uma piscada em cima da primeira coisa que se vê.
+
+    E é justamente por isso que a classe é marcada por JS em vez de vir no
+    HTML: sem JavaScript, ninguém marca nada e todo o conteúdo nasce visível.
+  {% endcomment %}
+  <script src="{% estatico 'js/movimento.js' %}"></script>
+
+  {% comment %}
+    interface.js registra componentes no evento `alpine:init`, então precisa
+    vir antes do Alpine — os dois com defer, na ordem declarada.
+  {% endcomment %}
+  <script defer src="{% estatico 'js/interface.js' %}"></script>
+  <script defer src="{% estatico 'js/alpine.min.js' %}"></script>
+
+  {% block cabeca_extra %}{% endblock %}
+</head>
+
+<body class="bg-onix font-sans antialiased {% block classe_body %}{% endblock %}">
+
+  {% comment %}
+    Salto para o conteúdo: o primeiro Tab de quem navega por teclado não pode
+    ser os seis itens do menu, em toda visita.
+  {% endcomment %}
+  <a href="#conteudo"
+     class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100]
+            focus:rounded-lg focus:bg-osso focus:px-4 focus:py-2 focus:text-sm
+            focus:font-semibold focus:text-onix">
+    Pular para o conteúdo
+  </a>
+
+  {% block corpo %}{% endblock %}
+
+  {% include 'partials/toasts.html' %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

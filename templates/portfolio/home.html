@@ -1,0 +1,761 @@
+{% extends 'base.html' %}
+{% load icones estaticos %}
+
+{% comment %}
+  A página inteira.
+
+  Ela desce por uma ESCADA DE SUPERFÍCIES — fundo no topo, ônix, breu, ônix,
+  breu, ônix, fundo no fecho. Não são cores diferentes: é o mesmo matiz
+  variando claridade, e é isso que faz a sequência ler como profundidade em
+  vez de como sete seções coladas.
+
+  A malha técnica aparece só onde a seção respira (topo, projetos, contato):
+  um campo escuro do tamanho da tela lê como vazio, e a malha dá superfície.
+
+  O movimento vive em static/js/narrativa.js. Aqui o que existe são as marcas
+  que ele procura: `.revelar`, `[data-revelar-grupo]`, `[data-contador]`,
+  `[data-parallax]`, `[data-esteira]` e `[data-trilho]`.
+{% endcomment %}
+
+{% block cabeca_extra %}
+  {% comment %}
+    As bibliotecas da narrativa carregam só aqui. Ordem importa: gsap antes do
+    plugin, e os dois antes do narrativa.js.
+  {% endcomment %}
+  <script defer src="{% estatico 'js/vendor/gsap.min.js' %}"></script>
+  <script defer src="{% estatico 'js/vendor/ScrollTrigger.min.js' %}"></script>
+  <script defer src="{% estatico 'js/vendor/lenis.min.js' %}"></script>
+  <script defer src="{% estatico 'js/hero-canvas.js' %}"></script>
+  <script defer src="{% estatico 'js/narrativa.js' %}"></script>
+{% endblock %}
+
+{% block corpo %}
+
+{% include 'partials/header.html' %}
+
+<main id="conteudo">
+
+  {# ==================================================================== #}
+  {# 1 · TOPO                                                             #}
+  {# ==================================================================== #}
+  <section id="topo"
+           class="relative flex min-h-svh items-center overflow-hidden
+                  malha-tecnica bg-gradient-to-b from-fundo via-breu to-onix
+                  px-6 pb-20 pt-32">
+
+    {% comment %}
+      O canvas é decorativo e fica atrás de tudo. Quando ele não roda —
+      movimento reduzido, JS desligado, navegador sem canvas — o que
+      permanece é o gradiente com a malha, que já é o repouso do desenho.
+      Por isso não há imagem de reserva: não existe estado vazio a cobrir.
+    {% endcomment %}
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true" data-parallax="0.12">
+      <canvas data-hero-canvas
+              class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000"></canvas>
+      <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent to-onix"></div>
+    </div>
+
+    <div class="relative z-10 mx-auto w-full max-w-6xl" data-revelar-grupo>
+
+      <p class="rotulo revelar mb-5 flex items-center gap-2">
+        {% icone "MapPin" size=13 aria_hidden="true" %}
+        {{ CONTATO.local }}
+      </p>
+
+      <h1 class="titulo-display revelar text-[clamp(2.3rem,7.8vw,5.6rem)]">
+        {{ PESSOA.nome }}
+      </h1>
+
+      <div class="fio-acento revelar my-7"></div>
+
+      <p class="revelar mb-3 font-display text-lg font-semibold text-osso sm:text-xl">
+        {{ PESSOA.cargo }}
+      </p>
+      <p class="revelar mb-9 max-w-[52ch] text-base leading-relaxed text-secundaria sm:text-lg">
+        {{ PESSOA.chamada }}
+      </p>
+
+      <div class="revelar mb-9 flex flex-wrap gap-3">
+        <a href="{% url 'portfolio:curriculo' %}" class="btn-osso">
+          {% icone "Download" size=17 aria_hidden="true" %}
+          Baixar currículo
+        </a>
+        <a href="#projetos" class="btn-carmim">
+          {% icone "ArrowRight" size=17 aria_hidden="true" %}
+          Ver projetos
+        </a>
+        {% for rede in REDES_SOCIAIS %}
+          <a href="{{ rede.href }}" target="_blank" rel="noopener" class="btn-linha">
+            {% icone rede.icone size=17 aria_hidden="true" %}
+            {{ rede.rotulo }}
+          </a>
+        {% endfor %}
+        <a href="mailto:{{ CONTATO.email }}" class="btn-linha">
+          {% icone "Mail" size=17 aria_hidden="true" %}
+          E-mail
+        </a>
+      </div>
+
+      <ul class="revelar flex flex-wrap gap-2" aria-label="Principais tecnologias">
+        {% for tec in tecnologias|slice:":6" %}
+          <li><span class="tag {% if forloop.counter <= 2 %}tag-ac{% endif %}">{{ tec.nome }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 2 · SOBRE                                                            #}
+  {# ==================================================================== #}
+  <section id="sobre" class="bg-onix px-6 py-secao">
+    <div class="mx-auto max-w-6xl" data-revelar-grupo>
+
+      <p class="rotulo revelar mb-3">Sobre</p>
+      <h2 class="titulo-secao revelar mb-8 text-[clamp(1.8rem,4.5vw,3rem)]">
+        Quem escreve o código
+      </h2>
+
+      <div class="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
+        <div>
+          <p class="revelar max-w-[62ch] text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
+            {{ PESSOA.perfil }}
+          </p>
+
+          <dl class="revelar mt-10 grid grid-cols-3 gap-6 border-t border-borda pt-8">
+            <div>
+              {% comment %}
+                O número conta a partir do zero quando entra na tela
+                (narrativa.js). O valor no `data-contador` e o texto de dentro
+                são o MESMO — sem JavaScript, o texto já está certo.
+              {% endcomment %}
+              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
+                  data-contador="4">4</dd>
+              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+                Período na PUCPR
+              </dt>
+            </div>
+            <div>
+              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
+                  data-contador="{{ total_certificados }}">{{ total_certificados }}</dd>
+              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+                Certificações
+              </dt>
+            </div>
+            <div>
+              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl">2028</dd>
+              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+                Conclusão prevista
+              </dt>
+            </div>
+          </dl>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="card revelar p-6">
+            <span class="mb-4 inline-flex text-carmim-claro">{% icone "Briefcase" size=22 aria_hidden="true" %}</span>
+            <h3 class="titulo-cartao mb-2 text-lg">CAU/PR</h3>
+            <p class="text-sm leading-relaxed text-secundaria">
+              Estagiário de TI em desenvolvimento de software desde outubro de 2025.
+              Sistema web em Python e Django, com rotinas SQL sobre dados de ETL.
+            </p>
+          </div>
+          <div class="card revelar p-6">
+            <span class="mb-4 inline-flex text-carmim-claro">{% icone "GraduationCap" size=22 aria_hidden="true" %}</span>
+            <h3 class="titulo-cartao mb-2 text-lg">PUCPR</h3>
+            <p class="text-sm leading-relaxed text-secundaria">
+              Engenharia de Software, 2025 a 2028. Análise de requisitos, UML e
+              desenvolvimento web também vieram de lá, em certificações próprias.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 3 · TRAJETÓRIA                                                       #}
+  {# ==================================================================== #}
+  <section id="trajetoria" class="border-y border-borda bg-breu px-6 py-secao">
+    <div class="mx-auto max-w-6xl">
+
+      <p class="rotulo revelar mb-3">Trajetória</p>
+      <h2 class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
+        Experiência &amp; formação
+      </h2>
+
+      {% if experiencias or formacoes %}
+        <div class="grid gap-14 lg:grid-cols-2">
+
+          {# --- Coluna 1: experiência profissional --- #}
+          <div data-revelar-grupo>
+            <h3 class="revelar mb-8 flex items-center gap-2.5 font-mono text-xs font-bold uppercase tracking-[0.16em] text-osso">
+              {% icone "Briefcase" size=15 class="text-carmim-claro" aria_hidden="true" %}
+              Experiência profissional
+            </h3>
+
+            {% if experiencias %}
+              <ol class="relative">
+                <span class="tl-eixo" aria-hidden="true"></span>
+                {% for exp in experiencias %}
+                  <li class="revelar relative flex gap-5 pb-10 last:pb-0">
+                    <span class="tl-marca {% if exp.em_curso %}tl-marca-atual{% endif %}" aria-hidden="true"></span>
+                    <div class="card flex-1 p-5">
+                      <p class="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.13em] text-carmim-claro">
+                        {{ exp.periodo }}
+                        {% if exp.em_curso %}
+                          <span class="ml-1.5 rounded bg-carmim px-1.5 py-0.5 text-osso">Atual</span>
+                        {% endif %}
+                      </p>
+                      <h4 class="titulo-cartao text-base">{{ exp.cargo }}</h4>
+                      <p class="mt-1 text-sm text-secundaria">
+                        {{ exp.organizacao }}{% if exp.local %} · {{ exp.local }}{% endif %}
+                      </p>
+                      {% if exp.atividades %}
+                        <ul class="mt-4 space-y-2">
+                          {% for atividade in exp.atividades %}
+                            <li class="flex gap-2.5 text-sm leading-relaxed text-secundaria">
+                              <span class="mt-[7px] h-1 w-1 flex-none rounded-full bg-carmim-claro" aria-hidden="true"></span>
+                              <span>{{ atividade }}</span>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ol>
+            {% else %}
+              <p class="text-sm text-secundaria">Nenhuma experiência cadastrada ainda.</p>
+            {% endif %}
+          </div>
+
+          {# --- Coluna 2: formação --- #}
+          <div data-revelar-grupo>
+            <h3 class="revelar mb-8 flex items-center gap-2.5 font-mono text-xs font-bold uppercase tracking-[0.16em] text-osso">
+              {% icone "GraduationCap" size=15 class="text-carmim-claro" aria_hidden="true" %}
+              Formação acadêmica
+            </h3>
+
+            {% if formacoes %}
+              <ol class="relative">
+                <span class="tl-eixo" aria-hidden="true"></span>
+                {% for form in formacoes %}
+                  <li class="revelar relative flex gap-5 pb-10 last:pb-0">
+                    <span class="tl-marca {% if form.em_curso %}tl-marca-atual{% endif %}" aria-hidden="true"></span>
+                    <div class="card flex-1 p-5">
+                      <p class="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.13em] text-carmim-claro">
+                        {{ form.periodo }}
+                        {% if form.em_curso %}
+                          <span class="ml-1.5 rounded bg-carmim px-1.5 py-0.5 text-osso">Cursando</span>
+                        {% endif %}
+                      </p>
+                      <h4 class="titulo-cartao text-base">{{ form.cargo }}</h4>
+                      <p class="mt-1 text-sm text-secundaria">
+                        {{ form.organizacao }}{% if form.local %} · {{ form.local }}{% endif %}
+                      </p>
+                      {% if form.atividades %}
+                        <ul class="mt-4 space-y-2">
+                          {% for atividade in form.atividades %}
+                            <li class="flex gap-2.5 text-sm leading-relaxed text-secundaria">
+                              <span class="mt-[7px] h-1 w-1 flex-none rounded-full bg-carmim-claro" aria-hidden="true"></span>
+                              <span>{{ atividade }}</span>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ol>
+            {% else %}
+              <p class="text-sm text-secundaria">Nenhuma formação cadastrada ainda.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <p class="text-secundaria">
+          A trajetória aparece aqui assim que houver entradas cadastradas no admin.
+        </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 4 · CERTIFICAÇÕES                                                    #}
+  {# ==================================================================== #}
+  <section id="certificacoes" class="bg-onix px-6 py-secao">
+    <div class="mx-auto max-w-6xl">
+
+      <p class="rotulo revelar mb-3">Certificações</p>
+      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+        O que está comprovado
+      </h2>
+      <p class="revelar mb-12 max-w-[58ch] text-secundaria">
+        Cada certificado tem verificação — link público da credencial ou o PDF original.
+      </p>
+
+      {% if certificados %}
+        <ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
+          {% for cert in certificados %}
+            <li class="revelar" x-data="modal">
+              <article class="card card-interativo flex h-full flex-col p-6">
+                <div class="mb-5 flex items-start justify-between gap-3">
+                  <span class="text-carmim-claro">{% icone "Award" size=24 aria_hidden="true" %}</span>
+                  <span class="tag">{{ cert.get_categoria_display }}</span>
+                </div>
+
+                <h3 class="titulo-cartao mb-2 text-base">{{ cert.nome }}</h3>
+
+                <p class="mb-4 text-sm text-secundaria">{{ cert.instituicao_emissora }}</p>
+
+                <p class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
+                  <span class="flex items-center gap-1.5">
+                    {% icone "Calendar" size=12 aria_hidden="true" %}
+                    {{ cert.data_emissao|date:"m/Y" }}
+                  </span>
+                  {% if cert.carga_horaria %}
+                    <span class="flex items-center gap-1.5">
+                      {% icone "Clock" size=12 aria_hidden="true" %}
+                      {{ cert.carga_horaria }}h
+                    </span>
+                  {% endif %}
+                </p>
+
+                <div class="mt-auto flex flex-wrap gap-2 pt-1">
+                  <button type="button"
+                          x-ref="gatilho"
+                          @click="abrir()"
+                          class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                    Detalhes
+                  </button>
+                  {% if cert.link_credencial %}
+                    <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener"
+                       class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                      {% icone "ExternalLink" size=13 aria_hidden="true" %}
+                      Verificar
+                    </a>
+                  {% elif cert.arquivo_pdf %}
+                    <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener"
+                       class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                      {% icone "FileText" size=13 aria_hidden="true" %}
+                      Abrir PDF
+                    </a>
+                  {% endif %}
+                </div>
+              </article>
+
+              {% comment %}
+                O diálogo. `x-cloak` evita que ele pisque antes do Alpine
+                iniciar; o `tabindex="-1"` no painel é o que permite mandar o
+                foco para dentro dele ao abrir — sem isso, o Tab seguinte
+                continuaria na página atrás do diálogo.
+              {% endcomment %}
+              <div x-cloak x-show="aberto"
+                   x-transition.opacity.duration.200ms
+                   @keydown.escape.window="fechar()"
+                   class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                   role="dialog" aria-modal="true"
+                   aria-labelledby="cert-titulo-{{ cert.pk }}">
+                <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
+
+                <div x-ref="dialogo" tabindex="-1"
+                     class="card relative w-full max-w-lg border-borda-forte bg-fundo p-7 shadow-2xl shadow-black/60">
+                  <div class="mb-5 flex items-start justify-between gap-4">
+                    <span class="text-carmim-claro">{% icone "Award" size=26 aria_hidden="true" %}</span>
+                    <button type="button" @click="fechar()" aria-label="Fechar"
+                            class="-m-1 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+                      {% icone "X" size=19 %}
+                    </button>
+                  </div>
+
+                  <h3 id="cert-titulo-{{ cert.pk }}" class="titulo-cartao mb-4 text-xl">
+                    {{ cert.nome }}
+                  </h3>
+
+                  <dl class="mb-6 grid grid-cols-2 gap-4 border-y border-borda py-4 text-sm">
+                    <div>
+                      <dt class="rotulo rotulo-mudo mb-1">Instituição</dt>
+                      <dd class="text-osso">{{ cert.instituicao_emissora }}</dd>
+                    </div>
+                    <div>
+                      <dt class="rotulo rotulo-mudo mb-1">Emissão</dt>
+                      <dd class="text-osso">{{ cert.data_emissao|date:"d/m/Y" }}</dd>
+                    </div>
+                    {% if cert.carga_horaria %}
+                      <div>
+                        <dt class="rotulo rotulo-mudo mb-1">Carga horária</dt>
+                        <dd class="text-osso">{{ cert.carga_horaria }} horas</dd>
+                      </div>
+                    {% endif %}
+                    <div>
+                      <dt class="rotulo rotulo-mudo mb-1">Categoria</dt>
+                      <dd class="text-osso">{{ cert.get_categoria_display }}</dd>
+                    </div>
+                  </dl>
+
+                  <div class="flex flex-wrap gap-2">
+                    {% if cert.link_credencial %}
+                      <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener" class="btn-osso !text-xs">
+                        {% icone "ExternalLink" size=14 aria_hidden="true" %}
+                        Verificar credencial
+                      </a>
+                    {% endif %}
+                    {% if cert.arquivo_pdf %}
+                      <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener" class="btn-linha !text-xs">
+                        {% icone "FileText" size=14 aria_hidden="true" %}
+                        Abrir PDF
+                      </a>
+                    {% endif %}
+                    {% if not cert.tem_verificacao %}
+                      <p class="text-sm text-secundaria">
+                        Sem link de verificação cadastrado.
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-secundaria">
+          As certificações aparecem aqui assim que forem cadastradas no admin.
+        </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 5 · PROJETOS                                                         #}
+  {# ==================================================================== #}
+  <section id="projetos"
+           class="malha-tecnica border-y border-borda bg-breu px-6 py-secao"
+           x-data="filtroProjetos([{% for projeto in projetos %}'{{ projeto.slugs_tecnologias|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}])">
+    <div class="mx-auto max-w-6xl">
+
+      <p class="rotulo revelar mb-3">Projetos</p>
+      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+        O que eu construí
+      </h2>
+
+      {% if projetos %}
+        {% if tecnologias_filtro %}
+          <p class="revelar mb-8 max-w-[58ch] text-secundaria">
+            Filtre por tecnologia — a lista responde na hora, sem recarregar.
+          </p>
+
+          <div class="revelar mb-10 flex flex-wrap gap-2" role="group" aria-label="Filtrar projetos por tecnologia">
+            <button type="button"
+                    class="tag-filtro"
+                    :class="{ 'tag-ativa': ativo === 'todos' }"
+                    :aria-pressed="ativo === 'todos' ? 'true' : 'false'"
+                    @click="selecionar('todos')">
+              {% icone "Filter" size=13 aria_hidden="true" %}
+              Todos
+            </button>
+            {% for tec in tecnologias_filtro %}
+              <button type="button"
+                      class="tag-filtro"
+                      :class="{ 'tag-ativa': ativo === '{{ tec.slug|escapejs }}' }"
+                      :aria-pressed="ativo === '{{ tec.slug|escapejs }}' ? 'true' : 'false'"
+                      @click="selecionar('{{ tec.slug|escapejs }}')">
+                {{ tec.nome }}
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% comment %}
+          A esteira. No desktop ela GRUDA e os cartões correm na horizontal
+          (narrativa.js); abaixo de 1024px o `flex-col` devolve uma pilha
+          comum — a esteira precisa de largura para se ler, e num celular
+          seria uma seção travada sem motivo aparente.
+        {% endcomment %}
+        <div data-esteira class="relative -mx-6 overflow-hidden px-6">
+          <ul data-trilho
+              class="flex flex-col gap-6 lg:w-max lg:flex-row lg:will-change-transform">
+            {% for projeto in projetos %}
+              <li data-projeto
+                  data-tecnologias="{{ projeto.slugs_tecnologias }}"
+                  x-show="mostrar('{{ projeto.slugs_tecnologias|escapejs }}')"
+                  x-transition.opacity.duration.200ms
+                  class="revelar w-full flex-none lg:w-[22rem]">
+                <article class="card card-interativo flex h-full flex-col overflow-hidden">
+
+                  {% if projeto.imagem %}
+                    <img src="{{ projeto.imagem.url }}" alt=""
+                         loading="lazy" decoding="async"
+                         class="aspect-[16/10] w-full border-b border-borda object-cover">
+                  {% else %}
+                    {% comment %}
+                      Sem imagem o cartão mostra a própria malha, e não um
+                      retângulo cinza dizendo "sem imagem". A ausência não
+                      precisa virar um aviso.
+                    {% endcomment %}
+                    <div class="malha-tecnica aspect-[16/10] w-full border-b border-borda bg-fundo"
+                         aria-hidden="true"></div>
+                  {% endif %}
+
+                  <div class="flex flex-1 flex-col p-6">
+                    {% if projeto.destaque %}
+                      <p class="rotulo mb-3 flex items-center gap-1.5">
+                        {% icone "Star" size=12 aria_hidden="true" %}
+                        Destaque
+                      </p>
+                    {% endif %}
+
+                    <h3 class="titulo-cartao mb-2 text-lg">{{ projeto.titulo }}</h3>
+                    <p class="mb-5 text-sm leading-relaxed text-secundaria">
+                      {{ projeto.descricao_curta }}
+                    </p>
+
+                    {% if projeto.tecnologias.all %}
+                      <ul class="mb-6 flex flex-wrap gap-1.5">
+                        {% for tec in projeto.tecnologias.all %}
+                          <li><span class="tag">{{ tec.nome }}</span></li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+
+                    <div class="mt-auto flex flex-wrap gap-2">
+                      {% if projeto.link_github %}
+                        <a href="{{ projeto.link_github }}" target="_blank" rel="noopener"
+                           class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                          {% icone "Github" size=14 aria_hidden="true" %}
+                          Código
+                        </a>
+                      {% endif %}
+                      {% if projeto.link_deploy %}
+                        <a href="{{ projeto.link_deploy }}" target="_blank" rel="noopener"
+                           class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                          {% icone "ArrowUpRight" size=14 aria_hidden="true" %}
+                          Ver no ar
+                        </a>
+                      {% endif %}
+                      {% if not projeto.link_github and not projeto.link_deploy %}
+                        <span class="font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
+                          Repositório privado
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </article>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <p x-cloak x-show="vazio" class="mt-8 text-secundaria">
+          Nenhum projeto usa essa tecnologia ainda.
+          <button type="button" @click="selecionar('todos')" class="link-texto">Ver todos</button>.
+        </p>
+
+      {% else %}
+        <div class="card mt-6 p-8">
+          <p class="text-secundaria">
+            Os projetos aparecem aqui assim que forem cadastrados no admin —
+            com imagem, tecnologias e links para o código e para o site no ar.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 6 · HABILIDADES                                                      #}
+  {# ==================================================================== #}
+  <section id="habilidades" class="bg-onix px-6 py-secao">
+    <div class="mx-auto max-w-6xl">
+
+      <p class="rotulo revelar mb-3">Habilidades</p>
+      <h2 class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
+        Ferramentas de trabalho
+      </h2>
+
+      {% if tecnologias %}
+        {% comment %}
+          `regroup` agrupa VIZINHOS, então a lista precisa chegar ordenada
+          pela chave — quem garante isso é `na_ordem_do_quadro()`, na view.
+          Agrupar por `get_categoria_display` traz o rótulo legível em vez do
+          valor cru do banco.
+
+          Três colunas, e não quatro: são CINCO categorias, e numa grade de
+          quatro a quinta ficava sozinha numa segunda linha, parecendo sobra.
+          Em três, 5 vira 3 + 2 — e cada coluna ainda cabe "Engenharia e
+          metodologias" sem quebrar o rótulo.
+        {% endcomment %}
+        {% regroup tecnologias by get_categoria_display as grupos %}
+        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
+          {% for grupo in grupos %}
+            <div class="revelar">
+              <h3 class="mb-5 border-b border-borda pb-3 font-mono text-[0.68rem] font-bold uppercase tracking-[0.15em] text-carmim-claro">
+                {{ grupo.grouper }}
+              </h3>
+              <ul class="flex flex-wrap gap-2">
+                {% for tec in grupo.list %}
+                  <li><span class="tag">{{ tec.nome }}</span></li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-secundaria">
+          As tecnologias aparecem aqui assim que forem cadastradas no admin.
+        </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ==================================================================== #}
+  {# 7 · CONTATO                                                          #}
+  {# ==================================================================== #}
+  <section id="contato"
+           class="malha-tecnica border-t border-borda bg-gradient-to-b from-onix to-fundo px-6 py-secao">
+    <div class="mx-auto max-w-6xl">
+
+      <div class="grid gap-14 lg:grid-cols-[1fr_1.2fr]">
+
+        <div data-revelar-grupo>
+          <p class="rotulo revelar mb-3">Contato</p>
+          <h2 class="titulo-secao revelar mb-5 text-[clamp(1.8rem,4.5vw,3rem)]">
+            Vamos conversar
+          </h2>
+          <p class="revelar mb-9 max-w-[42ch] leading-relaxed text-secundaria">
+            Estou aberto a oportunidades de estágio e desenvolvimento em Python
+            e Django. Escreva pelo formulário ou use os canais diretos.
+          </p>
+
+          <ul class="revelar space-y-4">
+            <li>
+              <a href="mailto:{{ CONTATO.email }}"
+                 class="group flex items-center gap-3 text-sm text-secundaria transition-colors hover:text-osso">
+                <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-borda text-carmim-claro transition-colors group-hover:border-carmim-claro">
+                  {% icone "Mail" size=17 aria_hidden="true" %}
+                </span>
+                {{ CONTATO.email }}
+              </a>
+            </li>
+            <li>
+              <a href="tel:{{ CONTATO.telefone_href }}"
+                 class="group flex items-center gap-3 text-sm text-secundaria transition-colors hover:text-osso">
+                <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-borda text-carmim-claro transition-colors group-hover:border-carmim-claro">
+                  {% icone "Phone" size=17 aria_hidden="true" %}
+                </span>
+                {{ CONTATO.telefone }}
+              </a>
+            </li>
+            {% for rede in REDES_SOCIAIS %}
+              <li>
+                <a href="{{ rede.href }}" target="_blank" rel="noopener"
+                   class="group flex items-center gap-3 text-sm text-secundaria transition-colors hover:text-osso">
+                  <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-borda text-carmim-claro transition-colors group-hover:border-carmim-claro">
+                    {% icone rede.icone size=17 aria_hidden="true" %}
+                  </span>
+                  {{ rede.rotulo }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="card revelar p-7 sm:p-9">
+          <form method="post" action="{% url 'portfolio:contato' %}" novalidate>
+            {% csrf_token %}
+
+            {% if form_contato.non_field_errors %}
+              <div class="mb-6 flex items-start gap-2.5 rounded-xl border-2 border-erro/50 bg-erro/10 p-4">
+                <span class="mt-0.5 flex-none text-erro">{% icone "AlertCircle" size=17 aria_hidden="true" %}</span>
+                <div class="text-sm text-erro">
+                  {% for erro in form_contato.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            {% comment %}
+              O honeypot. `aria-hidden` mais `tabindex="-1"` o tiram do
+              teclado e do leitor de tela; a posição absoluta fora da tela o
+              tira do olho. Não usa `display: none` porque parte dos robôs
+              ignora campos escondidos assim — e o campo precisa parecer
+              preenchível para servir de armadilha.
+            {% endcomment %}
+            <div class="pointer-events-none absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label for="{{ form_contato.site.id_for_label }}">Não preencha este campo</label>
+              {{ form_contato.site }}
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label class="label-base" for="{{ form_contato.nome.id_for_label }}">
+                  {{ form_contato.nome.label }} <span class="text-carmim-claro" aria-hidden="true">*</span>
+                </label>
+                {{ form_contato.nome }}
+                {% include 'partials/erros_campo.html' with campo=form_contato.nome %}
+              </div>
+              <div>
+                <label class="label-base" for="{{ form_contato.email.id_for_label }}">
+                  {{ form_contato.email.label }} <span class="text-carmim-claro" aria-hidden="true">*</span>
+                </label>
+                {{ form_contato.email }}
+                {% include 'partials/erros_campo.html' with campo=form_contato.email %}
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <label class="label-base" for="{{ form_contato.assunto.id_for_label }}">
+                {{ form_contato.assunto.label }}
+              </label>
+              {{ form_contato.assunto }}
+              {% include 'partials/erros_campo.html' with campo=form_contato.assunto %}
+            </div>
+
+            <div class="mt-5">
+              <label class="label-base" for="{{ form_contato.mensagem.id_for_label }}">
+                {{ form_contato.mensagem.label }} <span class="text-carmim-claro" aria-hidden="true">*</span>
+              </label>
+              {{ form_contato.mensagem }}
+              {% include 'partials/erros_campo.html' with campo=form_contato.mensagem %}
+            </div>
+
+            <div class="mt-7 flex flex-wrap items-center gap-4">
+              <button type="submit" class="btn-osso">
+                {% icone "Send" size=16 aria_hidden="true" %}
+                Enviar mensagem
+              </button>
+              <p class="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-secundaria">
+                Respondo em até dois dias
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+{% include 'partials/footer.html' %}
+
+{% if contato_com_erro %}
+  {% comment %}
+    O formulário voltou com erro. Sem isto o navegador mostraria o topo da
+    página e a pessoa não veria o que deu errado — o erro estaria sete seções
+    abaixo. `replaceState` em vez de mudar `location.hash` para o salto não
+    entrar no histórico: voltar tem de sair da página, não desfazer a rolagem.
+  {% endcomment %}
+  <script>
+    (function () {
+      var alvo = document.getElementById('contato')
+      var campo = document.querySelector('.input-erro')
+      if (campo) {
+        campo.focus({ preventScroll: true })
+      }
+      if (alvo) {
+        alvo.scrollIntoView()
+        history.replaceState(null, '', '#contato')
+      }
+    })()
+  </script>
+{% endif %}
+
+{% endblock %}
