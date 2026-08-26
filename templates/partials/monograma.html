@@ -1,12 +1,19 @@
-{% comment %}
-  O monograma "AG" — a marca do site.
+{% load estaticos %}{% comment %}
+  A marca "AG" — o monograma na variante monoline.
 
-  Não é logotipo emprestado de lugar nenhum: são as iniciais em mono, dentro
-  de um quadrado de canto arredondado com contorno de carmim-claro. O contorno
-  usa o claro e não o laca porque aqui a cor é o sinal (regra 2): a 2,94:1 o
-  laca seria uma moldura que mal se enxerga.
+  É um SVG traçado (static/img/marca.svg), não mais o quadrado de canto
+  arredondado com as iniciais em mono que ficava aqui. O quadrado era um
+  substituto até existir marca; agora existe.
+
+  Vai como <img> e não inline: a marca aparece em quatro lugares (cabeçalho,
+  menu do celular, rodapé e 404) e o arquivo externo entra no cache uma vez
+  em vez de repetir dois quilobytes de path em cada página.
 
   Uso:
     {% include 'partials/monograma.html' with tamanho='lg' %}
-{% endcomment %}
-<span class="monograma monograma-{{ tamanho|default:'md' }}" aria-hidden="true">{{ PESSOA.monograma }}</span>
+{% endcomment %}<img src="{% estatico 'img/marca.svg' %}"
+     alt=""
+     aria-hidden="true"
+     width="{% if tamanho == 'lg' %}56{% elif tamanho == 'md' %}44{% else %}36{% endif %}"
+     height="{% if tamanho == 'lg' %}56{% elif tamanho == 'md' %}44{% else %}36{% endif %}"
+     class="{% if tamanho == 'lg' %}h-14 w-14{% elif tamanho == 'md' %}h-11 w-11{% else %}h-9 w-9{% endif %} flex-none select-none">

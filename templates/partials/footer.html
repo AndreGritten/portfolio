@@ -33,7 +33,7 @@
         <h2 class="rotulo rotulo-mudo mb-4">Seções</h2>
         <ul class="space-y-2.5 text-sm text-secundaria">
           {% for item in ITENS_MENU %}
-            <li><a href="{{ item.href }}" class="link-texto">{{ item.rotulo }}</a></li>
+            <li><a href="{{ item.href }}" class="link-rodape">{{ item.rotulo }}</a></li>
           {% endfor %}
         </ul>
       </div>
@@ -41,14 +41,14 @@
       <div>
         <h2 class="rotulo rotulo-mudo mb-4">Contato</h2>
         <div class="space-y-2 text-sm text-secundaria">
-          <p><a href="mailto:{{ CONTATO.email }}" class="link-texto">{{ CONTATO.email }}</a></p>
-          <p><a href="tel:{{ CONTATO.telefone_href }}" class="link-texto">{{ CONTATO.telefone }}</a></p>
+          <p><a href="mailto:{{ CONTATO.email }}" class="link-rodape">{{ CONTATO.email }}</a></p>
+          <p><a href="tel:{{ CONTATO.telefone_href }}" class="link-rodape">{{ CONTATO.telefone }}</a></p>
           <p class="flex items-center gap-1.5">
             {% icone "MapPin" size=14 aria_hidden="true" %}
             {{ CONTATO.local }}
           </p>
           <p class="pt-1">
-            <a href="{% url 'portfolio:curriculo' %}" class="link-texto inline-flex items-center gap-1.5">
+            <a href="{% url 'portfolio:curriculo' %}" class="link-rodape inline-flex items-center gap-1.5">
               {% icone "Download" size=14 aria_hidden="true" %}
               Baixar currículo
             </a>

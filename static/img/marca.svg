@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AG">
+  <!-- O monograma AG na variante monoline: só o contorno, em carmim-claro,
+       sem quadrado e sem fundo. É a marca do cabeçalho e do rodapé, onde ela
+       pousa sobre superfícies diferentes e um fundo próprio brigaria com elas.
+
+       A geometria é REGULARIZADA, não traçada crua. O desenho de origem era
+       um raster de 287px com ruído de compressão, e seguir a borda de pixel
+       dele deixava toda diagonal serrilhada — no tamanho grande o A saía
+       enrugado. Cada aresta foi girada para o ângulo dominante a que pertence
+       e os cantos refeitos como interseção das retas vizinhas. São 39
+       vértices em vez de 182, e as retas são retas de verdade.
+
+       Espessura 2,4 no viewBox de 64: medida no tamanho real de uso (36px).
+       Abaixo disso o contorno interno fecha e o A some dentro do G. -->
+  <path d="M35.22 4.80L52.28 49.25L44.45 49.18L30.16 11.95L27.87 10.64L26.06 12.45L16.13 37.70L36.60 37.86L39.08 44.31L13.89 44.11L7.94 59.25L0.00 59.18L21.42 4.69Z M56.75 9.45L63.92 17.10L63.97 25.31L56.10 25.25L56.07 20.03L52.66 16.39L42.80 16.31L40.12 9.32Z M32.50 27.42L32.54 34.96L25.04 34.90L24.99 24.97L28.31 16.52Z M63.89 32.48L64.00 52.37L57.06 59.31L32.20 59.11L25.20 51.66L25.18 47.40L32.16 47.45L36.76 52.36L53.52 52.50L56.83 49.19L56.78 39.57L51.79 38.85L49.30 32.37Z" fill="none" stroke="#E5566B" stroke-width="2.4" stroke-linejoin="round"/>
+</svg>

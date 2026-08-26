@@ -35,9 +35,6 @@ module.exports = {
     'hidden', 'flex', 'grid',
     // Estados do filtro de projetos e das mensagens de erro montadas em JS.
     'tag-ativa', 'input-erro', 'erro-campo',
-    // Tamanhos do monograma: o partial compõe `monograma-{{ tamanho }}`, então
-    // o scanner nunca vê o nome inteiro.
-    'monograma-sm', 'monograma-md', 'monograma-lg',
   ],
 
   theme: {
@@ -100,32 +97,20 @@ module.exports = {
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
 
-      // Uma escada de espaçamento vertical entre seções, para o ritmo da
-      // página não virar um número solto por template.
+      // O espaçamento vertical entre seções, para o ritmo da página não virar
+      // um número solto por template.
+      //
+      // Um valor só. Havia um `secao-lg` de 10rem que nenhum template chegou a
+      // usar — token declarado sem consumidor é dívida: quem lê o config
+      // acredita que existe uma escada de dois degraus e escolhe entre eles.
       spacing: {
         'secao': '7rem',
-        'secao-lg': '10rem',
       },
 
-      keyframes: {
-        aparecer: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        subir: {
-          '0%': { transform: 'translateY(14px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        crescer: {
-          '0%': { transform: 'scale(.96)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
-        },
-      },
-      animation: {
-        aparecer: 'aparecer .3s ease-in-out',
-        subir: 'subir .35s ease-out',
-        crescer: 'crescer .15s ease-out',
-      },
+      // Os `keyframes`/`animation` daqui saíram: eram três pares (aparecer,
+      // subir, crescer) e nenhuma classe `animate-*` os invocava em template
+      // ou script nenhum. Quem anima nesta página é o GSAP, em
+      // static/js/narrativa.js, e o campo em static/js/campo.js.
     },
   },
 

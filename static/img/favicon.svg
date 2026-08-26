@@ -1,11 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- O monograma da página, no ônix da marca com contorno de carmim claro.
-       SVG e não PNG: a aba do navegador é o único lugar onde o ícone aparece
-       em quatro tamanhos diferentes, e um só arquivo resolve todos. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AG">
+  <!-- O mesmo monograma da marca do cabeçalho (static/img/marca.svg), aqui
+       PREENCHIDO e não em contorno. As duas variantes existem porque os dois
+       lugares têm tamanhos diferentes: a marca aparece a 36px e o monoline
+       lê bem; o ícone desce a 16px, e nesse tamanho o vazado do contorno
+       fecha e o AG vira uma mancha vermelha sem letra reconhecível.
+       Preenchido, o glifo se lê até nos 16px.
+
+       O quadrado de ônix dá corpo ao ícone na aba, que é clara em metade dos
+       navegadores. Os cantos arredondados são TRANSPARENTES de propósito —
+       se aparecerem brancos no .ico, a rasterização é que perdeu o canal
+       alfa, não o desenho.
+
+       SVG e não PNG: a aba é o único lugar onde o ícone aparece em quatro
+       tamanhos diferentes, e um só arquivo resolve todos. O glifo é traçado —
+       não há texto, então nenhuma fonte precisa carregar. -->
   <rect width="64" height="64" rx="14" fill="#0B0A0C"/>
-  <rect x="4.5" y="4.5" width="55" height="55" rx="11" fill="none" stroke="#E5566B" stroke-width="3"/>
-  <text x="32" y="43"
-        font-family="'JetBrains Mono', ui-monospace, 'Consolas', monospace"
-        font-size="26" font-weight="700" letter-spacing="0.5"
-        text-anchor="middle" fill="#E5566B">AG</text>
+  <g transform="translate(32 32) scale(0.74) translate(-32 -32)">
+    <path d="M35.22 4.80L52.28 49.25L44.45 49.18L30.16 11.95L27.87 10.64L26.06 12.45L16.13 37.70L36.60 37.86L39.08 44.31L13.89 44.11L7.94 59.25L0.00 59.18L21.42 4.69Z M56.75 9.45L63.92 17.10L63.97 25.31L56.10 25.25L56.07 20.03L52.66 16.39L42.80 16.31L40.12 9.32Z M32.50 27.42L32.54 34.96L25.04 34.90L24.99 24.97L28.31 16.52Z M63.89 32.48L64.00 52.37L57.06 59.31L32.20 59.11L25.20 51.66L25.18 47.40L32.16 47.45L36.76 52.36L53.52 52.50L56.83 49.19L56.78 39.57L51.79 38.85L49.30 32.37Z" fill="#E5566B" fill-rule="evenodd"/>
+  </g>
 </svg>

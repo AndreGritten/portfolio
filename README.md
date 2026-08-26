@@ -126,6 +126,29 @@ uma tela parada e os blocos escondidos esperam um gatilho que nunca dispara.
 O `movimento.js` também não marca a classe que os esconde, então o conteúdo
 nasce visível e empilhado.
 
+Duas medidas do `.revelar` andam juntas e não podem ser mexidas separadas: o
+deslocamento de entrada (`--revelar-deslocamento`, 14px) tem de ser **menor
+que o menor `gap`** dos contêineres que o usam. `translateY` não tira o bloco
+do fluxo — a caixa fica onde está e só o desenho desce. Passando do gap, o
+cartão ainda invisível fica dentro do cartão de baixo, e a invasão aparece
+durante a animação ou de vez, se o gatilho falhar.
+
+### O campo
+
+`static/js/campo.js` desenha a malha viva atrás das três seções que respiram
+(topo, projetos, contato) — nós geométricos numa treliça de 112px, ligados por
+traços ortogonais que só aparecem perto do cursor. Parado, fica no mesmo peso
+da `.malha-tecnica` e praticamente não se enxerga.
+
+A reação tem duas camadas, e a distinção é o que evita o efeito de cursor
+genérico: a **deriva** é global (o campo inteiro translada 14px sob o mouse,
+como uma câmera) e a **revelação** é por proximidade. Como os traços seguem a
+grade, o recorte revelado tem contorno escalonado, nunca um círculo.
+
+O laço **para** quando tudo chega ao repouso, e o buffer do canvas só existe
+para a seção que está na tela. Abaixo de 768px o canvas é removido do DOM:
+sem cursor não há o que revelar, e a malha já é o repouso do desenho.
+
 ---
 
 ## Testes
@@ -170,6 +193,19 @@ Variáveis de ambiente — as duas primeiras são obrigatórias:
   um ícone que some da página é o tipo de defeito que ninguém nota.
 - **Mexeu em `theme/input.css`?** `npm run css` **e** `python
   tools/conferir_cores.py`.
+- **Diminuiu o `gap` de alguma grade de cartões?** Confira contra o
+  `--revelar-deslocamento` (14px). Gap menor que o deslocamento devolve a
+  sobreposição — ver [Movimento](#movimento).
+- **Mexeu no `favicon.svg`?** O `favicon.ico` é rasterizado a partir dele em
+  seis tamanhos e **não se regenera sozinho** — os dois vão divergir em
+  silêncio. Ambos e mais o `marca.svg` saem do mesmo glifo traçado; só a
+  espessura do traço muda (2,4 na marca a 36px, 4,5 no ícone que desce a
+  16px).
+- **Campo numa seção nova?** O `.campo` vai dentro de uma `<section>` com
+  `relative overflow-hidden`, e o conteúdo dela precisa de `relative z-10`,
+  senão o canvas pinta por cima. O `overflow-hidden` mora na seção e nunca no
+  `.campo`: overflow entre o canvas preso e a rolagem desliga o `sticky`, e o
+  buffer volta a ter a altura inteira da seção.
 - **Categoria de tecnologia nova?** Acrescente em `Tecnologia.ORDEM_DO_QUADRO`,
   senão ela aparece no fim do quadro de habilidades.
 - **Não regrave `requirements.txt` com `pip freeze >` no PowerShell**: o

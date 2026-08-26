@@ -11,6 +11,8 @@
 
   A malha técnica aparece só onde a seção respira (topo, projetos, contato):
   um campo escuro do tamanho da tela lê como vazio, e a malha dá superfície.
+  Nessas mesmas três seções mora o `[data-campo]`, o desenho que reage ao
+  mouse — a malha é o papel, o campo é o que está traçado nele.
 
   O movimento vive em static/js/narrativa.js. Aqui o que existe são as marcas
   que ele procura: `.revelar`, `[data-revelar-grupo]`, `[data-contador]`,
@@ -25,7 +27,7 @@
   <script defer src="{% estatico 'js/vendor/gsap.min.js' %}"></script>
   <script defer src="{% estatico 'js/vendor/ScrollTrigger.min.js' %}"></script>
   <script defer src="{% estatico 'js/vendor/lenis.min.js' %}"></script>
-  <script defer src="{% estatico 'js/hero-canvas.js' %}"></script>
+  <script defer src="{% estatico 'js/campo.js' %}"></script>
   <script defer src="{% estatico 'js/narrativa.js' %}"></script>
 {% endblock %}
 
@@ -44,24 +46,34 @@
                   px-6 pb-20 pt-32">
 
     {% comment %}
-      O canvas é decorativo e fica atrás de tudo. Quando ele não roda —
-      movimento reduzido, JS desligado, navegador sem canvas — o que
+      O campo é decorativo e fica atrás de tudo. Quando ele não roda —
+      movimento reduzido, JS desligado, celular, navegador sem canvas — o que
       permanece é o gradiente com a malha, que já é o repouso do desenho.
       Por isso não há imagem de reserva: não existe estado vazio a cobrir.
+
+      O `data-parallax` que ficava aqui SAIU, e não por descuido. Ele punha
+      um transform da GSAP no invólucro do canvas, e transform em ancestral
+      cria bloco contentor: o `sticky` do campo deixaria de se prender à
+      janela e passaria a se prender a esta caixa. A profundidade que o
+      parallax dava agora vem de outro lugar — da deriva do campo sob o
+      mouse, que é um deslocamento de câmera de verdade em vez de um
+      empurrão vertical na rolagem.
     {% endcomment %}
-    <div class="pointer-events-none absolute inset-0" aria-hidden="true" data-parallax="0.12">
-      <canvas data-hero-canvas
-              class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000"></canvas>
-      <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent to-onix"></div>
+    <div class="campo" aria-hidden="true">
+      <canvas data-campo></canvas>
     </div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-1/3 bg-gradient-to-b from-transparent to-onix"
+         aria-hidden="true"></div>
 
     <div class="relative z-10 mx-auto w-full max-w-6xl" data-revelar-grupo>
 
-      <p class="rotulo revelar mb-5 flex items-center gap-2">
-        {% icone "MapPin" size=13 aria_hidden="true" %}
-        {{ CONTATO.local }}
-      </p>
-
+      {% comment %}
+        A localidade SAIU daqui e foi para o "Sobre". O topo tem uma coisa a
+        dizer — o nome — e a sobrancelha de cidade era a primeira linha da
+        página gastando atenção com o dado menos importante do currículo.
+        No "Sobre" ela fica junto do resto do perfil, que é onde alguém a
+        procura de fato.
+      {% endcomment %}
       <h1 class="titulo-display revelar text-[clamp(2.3rem,7.8vw,5.6rem)]">
         {{ PESSOA.nome }}
       </h1>
@@ -111,9 +123,20 @@
     <div class="mx-auto max-w-6xl" data-revelar-grupo>
 
       <p class="rotulo revelar mb-3">Sobre</p>
-      <h2 class="titulo-secao revelar mb-8 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
         Quem escreve o código
       </h2>
+
+      {% comment %}
+        A localidade, vinda do topo. Em `rotulo-mudo` e não no carmim: logo
+        acima já há uma sobrancelha vermelha ("Sobre"), e duas empilhadas na
+        mesma cor viram uma escada sem hierarquia. Aqui ela é dado de apoio,
+        que é o papel certo dela.
+      {% endcomment %}
+      <p class="rotulo rotulo-mudo revelar mb-8 flex items-center gap-2">
+        {% icone "MapPin" size=13 aria_hidden="true" %}
+        {{ CONTATO.local }}
+      </p>
 
       <div class="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
         <div>
@@ -150,7 +173,8 @@
           </dl>
         </div>
 
-        <div class="flex flex-col gap-4">
+        {# Mesma razão do gap dos certificados: acima do deslocamento do `.revelar`. #}
+        <div class="flex flex-col gap-5">
           <div class="card revelar p-6">
             <span class="mb-4 inline-flex text-carmim-claro">{% icone "Briefcase" size=22 aria_hidden="true" %}</span>
             <h3 class="titulo-cartao mb-2 text-lg">CAU/PR</h3>
@@ -295,7 +319,11 @@
       </p>
 
       {% if certificados %}
-        <ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
+        {% comment %}
+          gap-6 (24px) e não gap-5: o gap precisa ser maior que o deslocamento
+          do `.revelar`, senão o cartão por revelar cai dentro do de baixo.
+        {% endcomment %}
+        <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
           {% for cert in certificados %}
             <li class="revelar" x-data="modal">
               <article class="card card-interativo flex h-full flex-col p-6">
@@ -428,10 +456,23 @@
   {# ==================================================================== #}
   {# 5 · PROJETOS                                                         #}
   {# ==================================================================== #}
+  {% comment %}
+    `relative overflow-hidden` na seção existe para o campo: o `relative` dá
+    a caixa onde ele se ancora, e o `overflow-hidden` recorta o canvas preso
+    nas bordas da seção. O recorte tem de morar AQUI e não no `.campo` —
+    overflow entre o elemento preso e o contêiner de rolagem desliga o
+    `sticky`, e o canvas voltaria a ter a altura inteira da seção presa.
+  {% endcomment %}
   <section id="projetos"
-           class="malha-tecnica border-y border-borda bg-breu px-6 py-secao"
+           class="relative overflow-hidden malha-tecnica border-y border-borda bg-breu px-6 py-secao"
            x-data="filtroProjetos([{% for projeto in projetos %}'{{ projeto.slugs_tecnologias|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}])">
-    <div class="mx-auto max-w-6xl">
+
+    <div class="campo" aria-hidden="true">
+      <canvas data-campo></canvas>
+    </div>
+
+    {# `relative z-10`: sem isto o canvas, por ser posicionado, pintaria por cima do conteúdo em fluxo. #}
+    <div class="relative z-10 mx-auto max-w-6xl">
 
       <p class="rotulo revelar mb-3">Projetos</p>
       <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
@@ -611,8 +652,13 @@
   {# 7 · CONTATO                                                          #}
   {# ==================================================================== #}
   <section id="contato"
-           class="malha-tecnica border-t border-borda bg-gradient-to-b from-onix to-fundo px-6 py-secao">
-    <div class="mx-auto max-w-6xl">
+           class="relative overflow-hidden malha-tecnica border-t border-borda bg-gradient-to-b from-onix to-fundo px-6 py-secao">
+
+    <div class="campo" aria-hidden="true">
+      <canvas data-campo></canvas>
+    </div>
+
+    <div class="relative z-10 mx-auto max-w-6xl">
 
       <div class="grid gap-14 lg:grid-cols-[1fr_1.2fr]">
 

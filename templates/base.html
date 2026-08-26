@@ -9,7 +9,14 @@
   <meta name="author" content="{{ PESSOA.nome_completo }}">
   <meta name="theme-color" content="#0B0A0C">
 
+  {% comment %}
+    Os dois, e a ORDEM importa: quem entende SVG usa o vetor e ignora o resto;
+    quem não entende cai no .ico, que traz seis tamanhos rasterizados a partir
+    do MESMO svg — então as duas versões não podem divergir.
+    Regerar o .ico é manual; ver as notas de manutenção no README.
+  {% endcomment %}
   <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="alternate icon" href="{% static 'img/favicon.ico' %}" sizes="16x16 32x32 48x48">
 
   {% comment %}
     Open Graph e Twitter: o portfólio é feito para ser COMPARTILHADO — num
