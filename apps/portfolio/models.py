@@ -316,7 +316,11 @@ class MensagemContato(models.Model):
     assunto = models.CharField('assunto', max_length=160, blank=True)
     mensagem = models.TextField('mensagem')
 
-    enviada_em = models.DateTimeField('recebida em', auto_now_add=True)
+    # Indexado porque esta é a ÚNICA tabela do projeto que cresce sem limite —
+    # as outras têm o tamanho do currículo. E o admin a ordena por
+    # `-enviada_em` com `date_hierarchy`, que varre a coluna inteira para
+    # montar a navegação por ano/mês.
+    enviada_em = models.DateTimeField('recebida em', auto_now_add=True, db_index=True)
     lida = models.BooleanField('lida', default=False)
     email_enviado = models.BooleanField(
         'e-mail entregue',
