@@ -294,6 +294,41 @@ if not DEBUG:
 
 
 # ---------------------------------------------------------------------------
+# Cache
+# ---------------------------------------------------------------------------
+
+# Existe por um número medido: a home faz sete consultas, e contra o Supabase
+# em `ca-central-1` cada ida custa ~155ms — `SELECT 1` custa o mesmo. O tempo
+# não está no banco, está na distância. Eram ~1,1s de rede para montar uma
+# página que só muda quando alguém edita o admin.
+#
+# LocMemCache, e não Redis: acrescentar um serviço para guardar UMA página
+# seria mais infraestrutura para manter do que o problema pede. O cache é por
+# processo, então cada worker do Gunicorn tem o seu — com um worker (o plano
+# gratuito do Render) isso é indiferente, e com vários o pior caso é cada um
+# montar a página uma vez. Ninguém vê conteúdo diferente: a home não depende
+# de quem pede.
+#
+# Em DEBUG o cache é DESLIGADO (DummyCache): guardar a página em
+# desenvolvimento significa editar um template e não ver a mudança, que é a
+# forma mais rápida de perder meia hora perseguindo um bug que não existe.
+CACHES = {
+    'default': (
+        {'BACKEND': 'django.core.cache.backends.dummy.DummyCache'}
+        if DEBUG
+        else {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'portfolio',
+            'TIMEOUT': 60 * 15,
+            # A home é uma entrada só. O limite existe para o caso de o cache
+            # ganhar outros usos e ninguém lembrar de pôr um teto.
+            'OPTIONS': {'MAX_ENTRIES': 100},
+        }
+    )
+}
+
+
+# ---------------------------------------------------------------------------
 # Mensagens → toasts
 # ---------------------------------------------------------------------------
 
