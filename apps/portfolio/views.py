@@ -10,6 +10,7 @@ from django.core.mail import EmailMessage
 from django.http import FileResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_POST
 
 from .forms import ContatoForm
@@ -19,41 +20,36 @@ logger = logging.getLogger(__name__)
 
 NOME_ARQUIVO_CURRICULO = 'curriculo-andre-gritten.pdf'
 
+# Quinze minutos é o TETO, não o intervalo de atualização: quem edita o admin
+# não espera nada, porque os signals limpam o cache na hora (ver signals.py).
+# O TTL só cobre o que os signals não alcançam — uma alteração feita direto no
+# banco, pelo pgAdmin ou pelo painel do Supabase.
+TEMPO_DE_CACHE_DA_HOME = 60 * 15
 
+
+@cache_page(TEMPO_DE_CACHE_DA_HOME)
 def home(request):
-    """A página inteira, numa consulta por seção."""
-    projetos = (
-        Projeto.objects
-        .filter(publicado=True)
-        .prefetch_related('tecnologias')
-    )
+    """
+    A página inteira.
 
-    # As tecnologias do FILTRO são só as que algum projeto publicado usa. Uma
-    # pílula que não filtra nada é uma promessa que a página não cumpre.
-    tecnologias_em_uso = (
-        Tecnologia.objects
-        .filter(projetos__publicado=True)
-        .distinct()
-        .order_by('nome')
-    )
+    CACHEADA, e a razão está na medição: a home faz sete consultas, e contra o
+    Supabase em `ca-central-1` cada ida custa ~155ms — `SELECT 1`, a consulta
+    mais barata que existe, custa o mesmo. O tempo não está no banco, está na
+    distância. Somando, eram ~1,1s de rede para montar uma página que só muda
+    quando alguém edita o admin.
 
-    contexto = {
-        'projetos': projetos,
-        'tecnologias_filtro': tecnologias_em_uso,
-        # Para a seção "Habilidades": todas, agrupadas por categoria no
-        # template com `{% regroup %}`. `na_ordem_do_quadro` é o que o regroup
-        # exige — ele agrupa vizinhos, então a lista precisa chegar ordenada
-        # pela chave do agrupamento, e nesta ordem e não na alfabética.
-        'tecnologias': Tecnologia.objects.na_ordem_do_quadro(),
-        'certificados': Certificado.objects.all(),
-        'experiencias': Experiencia.objects.filter(
-            tipo=Experiencia.Tipo.EXPERIENCIA
-        ),
-        'formacoes': Experiencia.objects.filter(tipo=Experiencia.Tipo.EDUCACAO),
-        'total_certificados': Certificado.objects.count(),
-        'form_contato': ContatoForm(),
-    }
-    return render(request, 'portfolio/home.html', contexto)
+    `cache_page` guarda a resposta pronta: a primeira visita paga as consultas,
+    as seguintes saem da memória. O TTFB medido em produção era ~950ms.
+
+    O cache é de PROCESSO (LocMemCache), então cada worker do Gunicorn tem o
+    seu. Com um worker, como no plano gratuito do Render, isso é indiferente;
+    com vários, o pior caso é cada um montar a página uma vez — todos com o
+    mesmo conteúdo, porque a página não depende de quem pede.
+
+    Quem edita o admin não espera o TTL: `apps/portfolio/signals.py` limpa o
+    cache a cada save/delete dos modelos que aparecem aqui.
+    """
+    return render(request, 'portfolio/home.html', _contexto_da_home())
 
 
 @require_POST
@@ -74,9 +70,8 @@ def contato(request):
         # Os erros voltam com o formulário preenchido, e a âncora leva de
         # volta à seção — sem ela o navegador jogaria a pessoa no topo, longe
         # do campo com problema.
-        contexto = _contexto_home_com_form(form)
-        resposta = render(request, 'portfolio/home.html', contexto, status=400)
-        return resposta
+        contexto = _contexto_da_home(form)
+        return render(request, 'portfolio/home.html', contexto, status=400)
 
     mensagem = form.save()
 
@@ -135,30 +130,55 @@ def curriculo(request):
     )
 
 
-def _contexto_home_com_form(form):
+def _contexto_da_home(form=None):
     """
-    Monta o contexto da home reaproveitando o formulário com erros.
+    O contexto da home — uma fonte só, para os dois caminhos que a renderizam.
 
-    Existe para o caminho de erro do contato não duplicar as consultas que a
-    `home` já sabe fazer — e para elas não saírem de sincronia quando uma
-    seção nova entrar.
+    Antes eram duas cópias: uma na `home` e outra na função de erro do contato.
+    O docstring da segunda dizia existir para *evitar* essa duplicação, mas o
+    resultado eram as mesmas sete consultas escritas duas vezes, para manter em
+    sincronia à mão — e nenhum teste pegaria o dia em que divergissem. Uma
+    seção nova entrava num lugar e faltava no outro.
+
+    `form` vem preenchido quando o contato voltou com erro; nos demais casos
+    nasce vazio.
     """
-    projetos = Projeto.objects.filter(publicado=True).prefetch_related('tecnologias')
+    # As tecnologias do FILTRO são só as que algum projeto publicado usa. Uma
+    # pílula que não filtra nada é uma promessa que a página não cumpre.
+    tecnologias_em_uso = (
+        Tecnologia.objects
+        .filter(projetos__publicado=True)
+        .distinct()
+        .order_by('nome')
+    )
+
     return {
-        'projetos': projetos,
-        'tecnologias_filtro': (
-            Tecnologia.objects
-            .filter(projetos__publicado=True)
-            .distinct()
-            .order_by('nome')
+        'projetos': (
+            Projeto.objects
+            .filter(publicado=True)
+            .prefetch_related('tecnologias')
         ),
-        'tecnologias': Tecnologia.objects.na_ordem_do_quadro(),
+        'tecnologias_filtro': tecnologias_em_uso,
+        # Para a seção "Habilidades": todas, agrupadas por categoria no
+        # template com `{% regroup %}`. `na_ordem_do_quadro` é o que o regroup
+        # exige — ele agrupa vizinhos, então a lista precisa chegar ordenada
+        # pela chave do agrupamento, e nesta ordem e não na alfabética.
+        # `list()` e não o queryset cru, por causa do `|slice:":6"` que o hero
+        # aplica: fatiar um queryset no template não reaproveita o resultado —
+        # o Django emite uma SEGUNDA consulta com `LIMIT 6`, e a mesma tabela
+        # era lida duas vezes por página. Numa lista já materializada o slice é
+        # só Python.
+        'tecnologias': list(Tecnologia.objects.na_ordem_do_quadro()),
         'certificados': Certificado.objects.all(),
-        'experiencias': Experiencia.objects.filter(tipo=Experiencia.Tipo.EXPERIENCIA),
+        'experiencias': Experiencia.objects.filter(
+            tipo=Experiencia.Tipo.EXPERIENCIA
+        ),
         'formacoes': Experiencia.objects.filter(tipo=Experiencia.Tipo.EDUCACAO),
-        'total_certificados': Certificado.objects.count(),
-        'form_contato': form,
+        # `total_certificados` saiu daqui: era um COUNT numa tabela que a linha
+        # acima já traz inteira. O template usa `{{ certificados|length }}`,
+        # que conta a lista já carregada — uma ida a menos ao banco.
+        'form_contato': form if form is not None else ContatoForm(),
         # O template usa isto para abrir a seção de contato já rolada, com o
         # foco no primeiro campo com erro.
-        'contato_com_erro': True,
+        'contato_com_erro': form is not None,
     }

@@ -10,6 +10,7 @@ from datetime import date
 from unittest import mock
 
 from django.core import mail
+from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
@@ -264,6 +265,96 @@ class CurriculoTests(TestCase):
         self.assertEqual(resposta['Content-Type'], 'application/pdf')
         self.assertIn('attachment', resposta['Content-Disposition'])
         resposta.close()
+
+
+CACHE_LOCAL = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'teste-do-cache',
+    }
+}
+
+
+@override_settings(CACHES=CACHE_LOCAL)
+class CacheDaHomeTests(TestCase):
+    """
+    O cache existe por um número: sete consultas × ~155ms de latência até o
+    Supabase, para uma página que só muda quando alguém edita o admin.
+
+    Em DEBUG o cache é DummyCache, então estes testes forçam o LocMemCache —
+    senão passariam sem exercitar nada.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.url = reverse('portfolio:home')
+
+    def test_segunda_visita_nao_toca_o_banco(self):
+        """A primeira paga as consultas; as seguintes saem da memória."""
+        self.client.get(self.url)
+
+        with self.assertNumQueries(0):
+            resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_home_nao_repete_consultas(self):
+        """
+        Trava o número de consultas para o N+1 não voltar sem ninguém ver.
+
+        Se este teste falhar depois de uma alteração na `home`, a pergunta é se
+        a consulta nova é necessária — não se o número deve subir.
+        """
+        with self.assertNumQueries(5):
+            self.client.get(self.url)
+
+    def test_salvar_no_admin_limpa_o_cache(self):
+        """
+        Sem os signals, editar um projeto e recarregar mostraria a versão velha
+        por até quinze minutos — e a pessoa salva de novo, achando que falhou.
+        """
+        self.client.get(self.url)
+
+        Projeto.objects.create(
+            titulo='Projeto recém-criado',
+            descricao_curta='Deve aparecer na hora.',
+            publicado=True,
+        )
+
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'Projeto recém-criado')
+
+    def test_mudar_tecnologias_limpa_o_cache(self):
+        """
+        Trocar as tags de um projeto não dispara `post_save` — o Django grava a
+        tabela intermediária por fora do `save()`. Sem o receptor de
+        `m2m_changed`, a barra de filtros ficaria desatualizada.
+        """
+        projeto = Projeto.objects.create(
+            titulo='Projeto com tags', descricao_curta='.', publicado=True
+        )
+        self.client.get(self.url)
+
+        projeto.tecnologias.add(
+            Tecnologia.objects.create(nome='Rust', categoria=Tecnologia.Categoria.BACKEND)
+        )
+
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'Rust')
+
+    def test_mensagem_de_contato_nao_limpa_o_cache(self):
+        """
+        `MensagemContato` não aparece na home e é o modelo que mais recebe
+        escrita. Invalidar por causa dela jogaria o cache fora a cada contato.
+        """
+        self.client.get(self.url)
+
+        MensagemContato.objects.create(
+            nome='Alguém', email='a@b.com', mensagem='Uma mensagem qualquer.'
+        )
+
+        with self.assertNumQueries(0):
+            self.client.get(self.url)
 
 
 class ConfiguracaoTests(SimpleTestCase):
