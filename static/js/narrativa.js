@@ -198,14 +198,6 @@
     revelar(elemento, elemento)
   })
 
-  gsap.utils.toArray('.revelar-simples').forEach(function (elemento) {
-    gsap.to(elemento, {
-      opacity: 1,
-      duration: 0.9,
-      ease: 'power1.out',
-      scrollTrigger: { trigger: elemento, start: 'top 90%', once: true },
-    })
-  })
 
   /* =====================================================================
    * 3. Contadores
@@ -388,7 +380,7 @@
   setTimeout(function () {
     var atrasados = []
 
-    document.querySelectorAll('.revelar, .revelar-simples').forEach(function (el) {
+    document.querySelectorAll('.revelar').forEach(function (el) {
       if (parseFloat(getComputedStyle(el).opacity) > 0.01) return
 
       /* `top < innerHeight` sozinho, sem o `bottom > 0` que havia aqui.

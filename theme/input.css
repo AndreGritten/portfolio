@@ -486,9 +486,11 @@
    * REVELAÇÃO POR ROLAGEM
    *
    * O estado inicial escondido só vale quando o JavaScript está de fato
-   * comandando: `narrativa.js` marca <html class="movimento"> antes de
-   * qualquer pintura. Sem essa marca — JS desligado, script que falhou,
-   * movimento reduzido — os elementos nascem visíveis.
+   * comandando: `movimento.js` marca <html class="movimento"> antes de
+   * qualquer pintura — ele carrega sem `defer` justamente para isso. Sem essa
+   * marca — JS desligado, script que falhou, movimento reduzido — os
+   * elementos nascem visíveis. (O `narrativa.js` só REMOVE a marca, quando
+   * descobre que o GSAP não carregou.)
    *
    * É a diferença entre uma página que degrada e uma página em branco.
    * ================================================================== */
@@ -512,13 +514,12 @@
     transform: translateY(var(--revelar-deslocamento, 14px));
   }
 
-  .movimento .revelar-simples {
-    opacity: 0;
-  }
 }
 
 @layer utilities {
-  .text-balance { text-wrap: balance; }
+  /* `.text-balance` saiu: nenhum template a usava, e ela era redundante —
+     `.titulo-display` e `.titulo-secao` já aplicam `text-wrap: balance` por
+     dentro, que é onde o equilíbrio de linha importa nesta página. */
   .text-pretty { text-wrap: pretty; }
 }
 
@@ -534,8 +535,7 @@
  * o caso de o JS já ter marcado a classe antes de a preferência ser lida.
  * ------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .movimento .revelar,
-  .movimento .revelar-simples {
+  .movimento .revelar {
     opacity: 1 !important;
     transform: none !important;
   }

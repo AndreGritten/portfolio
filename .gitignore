@@ -59,6 +59,32 @@ node_modules/
 Thumbs.db
 *.pem
 npm-debug.log*
+*.log
+
+# Arquivos compactados.
+#
+# Não é regra preventiva: o commit 0c3a78f trouxe um zip de 608KB de logos que
+# foi removido depois — e continua no histórico para sempre, porque remover um
+# arquivo não o tira dos commits anteriores. Todo `git clone` ainda carrega
+# esses 608KB. Aqui é para não acontecer de novo.
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# Resíduos de merge e de editor.
+*.orig
+*.rej
+*.bak
+*~
+
+# Ferramentas que o projeto ainda não usa, mas que sujam a raiz se entrarem.
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 .idea/
 .vscode/
 .claude/settings.local.json
