@@ -101,10 +101,30 @@ class ContatoForm(forms.ModelForm):
             raise forms.ValidationError('Não foi possível enviar. Tente novamente.')
         return ''
 
+    # Teto do que cabe numa mensagem de contato. Cinco mil caracteres são umas
+    # duas páginas — folgado para uma proposta de trabalho, e é o ponto.
+    #
+    # Sem teto, `mensagem` é um TextField sem `max_length`: um POST de dez
+    # megabytes era aceito, gravado no Postgres (500MB de cota) e ainda COLADO
+    # INTEIRO no corpo do e-mail que a view dispara. Encher o banco e a caixa
+    # de entrada de uma vez custava um `curl`.
+    TAMANHO_MAXIMO_MENSAGEM = 5000
+
     def clean_mensagem(self):
         mensagem = self.cleaned_data['mensagem'].strip()
+
         if len(mensagem) < 10:
             raise forms.ValidationError(
                 'A mensagem está curta demais — escreva pelo menos uma frase.'
             )
+
+        if len(mensagem) > self.TAMANHO_MAXIMO_MENSAGEM:
+            # A mensagem diz o limite e o excesso: sem os dois números, quem
+            # escreveu de verdade um texto longo não sabe quanto cortar.
+            raise forms.ValidationError(
+                f'A mensagem passou de {self.TAMANHO_MAXIMO_MENSAGEM:,} caracteres '
+                f'(são {len(mensagem):,}). Resuma ou mande o resto por e-mail.'
+                .replace(',', '.')
+            )
+
         return mensagem

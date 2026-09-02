@@ -124,17 +124,41 @@
   /* Âncoras clicadas. Com o Lenis ativo, o salto nativo do navegador o deixa
      fora de sincronia — ele continua achando que está onde estava. `scrollTo`
      do próprio Lenis mantém os dois no mesmo lugar.
-     O deslocamento de 80px é a altura do cabeçalho fixo. */
+     O deslocamento de 80px é a altura do cabeçalho fixo.
+
+     E O FOCO VAI JUNTO, que é a parte que faltava.
+
+     `preventDefault()` cancela o salto nativo — e o salto nativo fazia DUAS
+     coisas: rolava e movia o foco. Trocá-lo por um `scrollTo` devolvia só a
+     rolagem, e o foco ficava para trás, no link clicado.
+
+     Quem mais pagava por isso era justamente o "Pular para o conteúdo" do
+     base.html: a página rolava até o <main>, mas o Tab seguinte voltava para
+     os itens do menu — que é exatamente o problema que um skip link existe
+     para resolver. O atalho parecia funcionar e não funcionava.
+
+     `tabindex="-1"` porque <main> e <section> não são focáveis por natureza;
+     -1 os torna focáveis por script sem entrar na ordem de tabulação. */
   document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     link.addEventListener('click', function (evento) {
       var alvo = document.querySelector(link.getAttribute('href'))
       if (!alvo) return
+
       evento.preventDefault()
+
       if (lenis) {
         lenis.scrollTo(alvo, { offset: -80 })
       } else {
         alvo.scrollIntoView({ behavior: 'smooth' })
       }
+
+      if (!alvo.hasAttribute('tabindex')) {
+        alvo.setAttribute('tabindex', '-1')
+      }
+      /* `preventScroll` porque a rolagem é do Lenis: sem ele o navegador
+         daria o próprio salto por cima da animação, e o resultado é a página
+         chegando ao destino duas vezes, de dois jeitos. */
+      alvo.focus({ preventScroll: true })
     })
   })
 

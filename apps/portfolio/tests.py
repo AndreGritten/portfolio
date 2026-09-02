@@ -10,7 +10,7 @@ from datetime import date
 from unittest import mock
 
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .models import Certificado, Experiencia, MensagemContato, Projeto, Tecnologia
@@ -89,6 +89,28 @@ class ContatoTests(TestCase):
         # é vermelho.
         self.assertContains(resposta, 'input-erro', status_code=400)
         self.assertContains(resposta, 'aria-invalid="true"', status_code=400)
+
+    def test_mensagem_gigante_e_recusada(self):
+        """
+        Sem teto, `mensagem` é um TextField sem `max_length`: dez megabytes de
+        texto eram aceitos, gravados no Postgres (500MB de cota) e colados
+        inteiros no corpo do e-mail. Encher banco e caixa de entrada custava
+        um `curl`.
+        """
+        dados = dict(self.dados, mensagem='a' * 20000)
+        resposta = self.client.post(self.url, dados)
+
+        self.assertEqual(resposta.status_code, 400)
+        self.assertEqual(MensagemContato.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_mensagem_no_limite_passa(self):
+        """O teto recusa o abuso sem recusar quem escreveu muito de verdade."""
+        dados = dict(self.dados, mensagem='a' * 5000)
+        resposta = self.client.post(self.url, dados)
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(MensagemContato.objects.count(), 1)
 
     def test_get_nao_e_aceito(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
@@ -242,3 +264,67 @@ class CurriculoTests(TestCase):
         self.assertEqual(resposta['Content-Type'], 'application/pdf')
         self.assertIn('attachment', resposta['Content-Disposition'])
         resposta.close()
+
+
+class ConfiguracaoTests(SimpleTestCase):
+    """
+    O settings.py tem duas decisões que só se pagam num cenário que ninguém
+    exercita no dia a dia: o dia do deploy mal configurado e o dia do domínio
+    próprio. Sem teste, as duas voltam ao estado antigo na primeira refatoração
+    e ninguém percebe até doer.
+    """
+
+    def _recarregar(self, **ambiente):
+        """
+        Reimporta o settings com um ambiente controlado.
+
+        `override_settings` não serve aqui: o que se testa é a LÓGICA que
+        calcula os valores na importação, não os valores já calculados.
+        """
+        import importlib
+        from unittest import mock
+
+        import config.settings
+
+        with mock.patch.dict('os.environ', ambiente, clear=False):
+            return importlib.reload(config.settings)
+
+    def test_debug_e_falso_por_omissao(self):
+        """
+        Com `default=True`, a variável sumir do painel do Render bastava para o
+        site servir stack traces — e a página de erro do Django imprime
+        `os.environ`, onde estão a senha do Postgres e o api_secret do
+        Cloudinary. O modo perigoso não pode ser o que se obtém por omissão.
+        """
+        modulo = self._recarregar(DEBUG='')
+        self.assertFalse(modulo.DEBUG)
+
+    def test_csrf_cobre_dominio_proprio_sem_o_render(self):
+        """
+        O CSRF_TRUSTED_ORIGINS vivia dentro do `if RENDER_EXTERNAL_HOSTNAME`.
+        No dia em que um domínio próprio entrasse por ALLOWED_HOSTS, todo POST
+        passaria a dar 403 — e "o formulário não envia" não aponta para CSRF.
+        """
+        modulo = self._recarregar(
+            ALLOWED_HOSTS='andregritten.com.br,www.andregritten.com.br',
+            SECRET_KEY='chave-de-teste',
+        )
+        self.assertIn('https://andregritten.com.br', modulo.CSRF_TRUSTED_ORIGINS)
+        self.assertIn('https://www.andregritten.com.br', modulo.CSRF_TRUSTED_ORIGINS)
+
+    def test_csrf_ignora_localhost(self):
+        """
+        Em desenvolvimento o runserver fala HTTP, e o CsrfViewMiddleware só
+        exige origem confiável em requisição HTTPS. `https://localhost` na
+        lista seria ruído que nunca casa.
+        """
+        modulo = self._recarregar(ALLOWED_HOSTS='localhost,127.0.0.1')
+        self.assertEqual(modulo.CSRF_TRUSTED_ORIGINS, [])
+
+    def tearDown(self):
+        """Devolve o settings ao estado real, senão os próximos testes herdam o ambiente forjado."""
+        import importlib
+
+        import config.settings
+
+        importlib.reload(config.settings)
