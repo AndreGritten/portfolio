@@ -8,6 +8,7 @@ das variáveis, nunca o caminho do código.
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -26,9 +27,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CHAVE_DE_DESENVOLVIMENTO = 'django-insecure-portfolio-gritten-nao-use-em-producao'
 SECRET_KEY = config('SECRET_KEY', default=CHAVE_DE_DESENVOLVIMENTO)
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+# O padrão é FALSE, e a inversão é deliberada: o modo perigoso não pode ser o
+# que se obtém por omissão.
+#
+# Com `default=True`, bastava a variável sumir do painel do Render para o site
+# subir servindo stack traces — e a página de erro do Django imprime
+# `os.environ`, onde moram a senha do Postgres e o api_secret do Cloudinary. A
+# guarda da SECRET_KEY logo abaixo não cobre esse caso: ela só roda quando
+# DEBUG já é falso.
+#
+# Quem desenvolve põe DEBUG=True no .env (que o .env.example já documenta).
+# É uma linha a mais para o desenvolvedor e uma classe inteira de vazamento a
+# menos para produção.
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-if not DEBUG and SECRET_KEY == CHAVE_DE_DESENVOLVIMENTO:
+# A suíte de testes fica de fora da guarda.
+#
+# Com DEBUG virando `False` por padrão, `manage.py test` num clone limpo
+# passou a esbarrar nesta checagem — e a mensagem falava em "subir", que não é
+# o que quem roda teste está fazendo. A guarda existe para impedir que o SITE
+# seja SERVIDO com a chave pública; rodar teste não serve nada, e exigir uma
+# SECRET_KEY para isso só ensina a contorná-la com um valor qualquer.
+RODANDO_TESTES = 'test' in sys.argv
+
+if not DEBUG and not RODANDO_TESTES and SECRET_KEY == CHAVE_DE_DESENVOLVIMENTO:
     raise RuntimeError(
         'SECRET_KEY não foi definida e DEBUG está desligado. Gere uma com:\n'
         '    python -c "from django.core.management.utils import '
@@ -46,9 +68,27 @@ ALLOWED_HOSTS = config(
 # evita que o primeiro deploy caia em DisallowedHost por uma configuração
 # manual esquecida.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+
+# CSRF_TRUSTED_ORIGINS derivado de ALLOWED_HOSTS, e não só do hostname do
+# Render.
+#
+# Antes ele existia apenas dentro do `if RENDER_EXTERNAL_HOSTNAME`. Isso
+# funciona enquanto o endereço é o `.onrender.com` — e quebra calado no dia em
+# que um domínio próprio entrar por ALLOWED_HOSTS: o Django passa a recusar
+# todo POST com 403, e o sintoma (o formulário de contato não envia) não
+# aponta para a causa.
+#
+# `localhost` e `127.0.0.1` ficam de fora porque em desenvolvimento o
+# CsrfViewMiddleware só exige origem confiável em requisição HTTPS, e o
+# runserver fala HTTP. Entradas com porta ou curinga (`*`) também saem: a
+# primeira o Django aceitaria, mas o curinga viraria uma origem inválida.
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}'
+    for host in ALLOWED_HOSTS
+    if host not in ('localhost', '127.0.0.1', '[::1]') and '*' not in host
+]
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +268,30 @@ STORAGES = {
     },
 }
 
+# O template `admin/base.html` do django-jazzmin 3.0.5 chama
+# `{% static 'vendor/bootswatch' %}` — o CAMINHO DA PASTA do seletor de tema,
+# não um arquivo. É um bug do pacote: em modo estrito (o padrão do
+# ManifestStaticFilesStorage), qualquer entrada ausente do manifesto derruba
+# a página inteira com 500 — e uma pasta nunca tem entrada no manifesto,
+# então essa página SEMPRE quebraria em produção.
+#
+# `WHITENOISE_MANIFEST_STRICT = False` é o mecanismo que o próprio WhiteNoise
+# oferece para esse exato cenário: quando o hash não existe, ele devolve a
+# URL original sem hash em vez de lançar exceção. O admin continua com cache
+# eterno em tudo que tem entrada de verdade; só esse atributo solto do
+# Jazzmin passa a apontar para a pasta sem hash, o que não tem efeito visual
+# nenhum, porque o JavaScript do Jazzmin só usa esse atributo para montar a
+# URL de OUTROS arquivos (que aí sim têm hash) na hora de trocar de tema.
+#
+# O QUE SE PERDE, e vale saber: isto vale para TODOS os estáticos, não só o do
+# Jazzmin. Se um dia o `app.css` sumir do manifesto por um collectstatic
+# incompleto, a página passa a renderizar com a URL sem hash e um 404 mudo no
+# CSS, em vez de estourar no build. O que segura essa ponta é o `build.sh`,
+# que roda `collectstatic --noinput` sob `set -o errexit` — um collectstatic
+# quebrado derruba o deploy antes de publicar.
+if not DEBUG:
+    WHITENOISE_MANIFEST_STRICT = False
+
 
 # ---------------------------------------------------------------------------
 # Mensagens → toasts
@@ -276,9 +340,18 @@ EMAIL_DESTINO = config('EMAIL_DESTINO', default='dedegritten@gmail.com')
 #
 # Tudo aqui é inerte em desenvolvimento: com DEBUG ligado, redirecionar para
 # HTTPS e marcar os cookies como `Secure` quebraria o runserver, que fala HTTP.
+#
+# E inerte também durante os testes, pelo mesmo motivo: o `Client` de teste
+# fala HTTP. Com o redirecionamento ligado ele recebe 301 em vez da página,
+# `resposta.context` vem `None`, e onze testes quebram com mensagens que não
+# têm nada a ver com a causa ("'NoneType' object is not subscriptable"). Foi
+# o que aconteceu quando DEBUG passou a ser `False` por padrão.
+#
+# Testar HTTPS exigiria um cliente que falasse HTTPS — não é o caso aqui. O
+# que se testa é a aplicação; o TLS é do Render.
 # ---------------------------------------------------------------------------
 
-if not DEBUG:
+if not DEBUG and not RODANDO_TESTES:
     # O Render termina o TLS no proxy e repassa a requisição em HTTP. Sem
     # dizer isso ao Django, `request.is_secure()` é sempre falso e o
     # redirecionamento para HTTPS vira um laço infinito.
@@ -307,6 +380,27 @@ if not DEBUG:
 
 
 
+# Identificação do painel. NADA aqui conserta o 500 do admin — quem conserta é
+# o WHITENOISE_MANIFEST_STRICT lá em cima, junto de STORAGES. Este bloco é só
+# rótulo: nome do site, saudação, rodapé.
 JAZZMIN_SETTINGS = {
-    
+    'site_title': 'Portfólio',
+    'site_header': 'André Gritten',
+    'site_brand': 'André Gritten',
+    'welcome_sign': 'Painel do portfólio',
+    'copyright': 'André Gritten',
+    'show_ui_builder': False,
+}
+
+# 'darkly' é o tema Bootswatch mais próximo da identidade Ônix & Carmim do
+# site público — os dois ficam escuros por padrão, embora as cores de acento
+# não sejam as mesmas (o admin usa a paleta padrão do Bootstrap, não o
+# carmim). Trocar o acento exigiria um CSS próprio sobre o tema; não vale o
+# esforço para uma tela que só André usa.
+#
+# É escolha estética, não correção: sem esta linha o admin continuaria
+# funcionando (com o tema claro padrão), porque o que o mantinha de pé é o
+# WHITENOISE_MANIFEST_STRICT.
+JAZZMIN_UI_TWEAKS = {
+    'theme': 'darkly',
 }
