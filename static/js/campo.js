@@ -258,6 +258,22 @@
         }
       }
 
+      /* O ACOPLAMENTO COM O CURSOR.
+       *
+       * O cursor.js publica em `window.__cursorForca` o quanto ele está
+       * aberto — 1 sobre algo clicável, 0 no resto. Aqui esse valor puxa a
+       * revelação para cima, então parar sobre um link acende a treliça em
+       * volta junto com o anel do cursor: uma luz só atingindo as duas
+       * coisas, em vez de dois efeitos rodando lado a lado.
+       *
+       * O teto de 1 é o que impede o nó de estourar a escala e virar um
+       * ponto chapado. E o `|| 0` cobre o caso de o cursor.js não ter
+       * carregado — sem ele, isto é exatamente o comportamento de antes. */
+      var reforco = window.__cursorForca || 0
+      if (alvo > 0 && reforco > 0) {
+        alvo = Math.min(alvo * (1 + reforco * 0.55), 1)
+      }
+
       no.alvo = alvo
       var delta = alvo - no.i
       no.i += delta * LERP_NO
@@ -408,6 +424,15 @@
     rodando = true
     quadro = requestAnimationFrame(passo)
   }
+
+  /* Exposto para o cursor.js acordar o campo.
+   *
+   * O laço aqui PARA quando tudo estabiliza, e o `mousemove` é o que o
+   * religa. Só que o cursor pode abrir sem o mouse se mexer — rolando a
+   * página com a roda, um link desliza para debaixo de um ponteiro parado.
+   * Nesse instante o reforço muda mas nenhum mousemove chega, e a treliça
+   * ficaria inerte enquanto o anel abre. */
+  window.__campoLigar = ligar
 
   function parar() {
     rodando = false

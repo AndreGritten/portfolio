@@ -48,6 +48,17 @@ const FAMILIAS = [
     arquivo: 'jetbrains-mono',
     consulta: 'JetBrains+Mono:wght@100..800',
   },
+  {
+    // Só para o nome no topo. A Bricolage arredonda demais o ombro do 'R' e
+    // a barriga do 'G' — em corpo grande e caixa alta isso lê como simpático,
+    // e o topo não é o lugar para simpatia. A Space Grotesk corta esses
+    // mesmos traços em ângulo e tem o mesmo desenho técnico do JetBrains
+    // Mono que já marca os rótulos da página, então o topo passa a rimar com
+    // o resto em vez de destoar.
+    nome: 'Space Grotesk',
+    arquivo: 'space-grotesk',
+    consulta: 'Space+Grotesk:wght@300..700',
+  },
 ]
 
 // Só os subconjuntos que o português usa. `latin` cobre os acentos do

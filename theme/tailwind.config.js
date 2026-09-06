@@ -93,6 +93,11 @@ module.exports = {
         // nos pequenos, abre e fica legível. `font-optical-sizing: auto` no
         // input.css é o que liga isso.
         display: ['Bricolage Grotesque', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Só o nome no topo. A Space Grotesk corta em ângulo o que a
+        // Bricolage arredonda, e divide o desenho técnico do JetBrains Mono
+        // que já marca os rótulos — o topo rima com a página em vez de
+        // destoar dela.
+        nome: ['Space Grotesk', 'Bricolage Grotesque', 'ui-sans-serif', 'sans-serif'],
         sans: ['Instrument Sans', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },

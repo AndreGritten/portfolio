@@ -150,34 +150,85 @@
    * ================================================================== */
 
   @media (pointer: fine) {
-    html {
-      cursor: url('../img/cursor-seta.svg') 3 2, default;
+    /* O nativo só some quando o cursor.js confirma que desenhou as duas
+       peças — a classe é marcada por ele. Escondê-lo aqui direto deixaria a
+       página sem cursor nenhum caso o script não rodasse, que é o pior
+       resultado possível deste efeito. */
+    html.cursor-proprio,
+    html.cursor-proprio * {
+      cursor: none;
     }
 
-    a[href],
-    button,
-    [role='button'],
-    summary,
-    label[for],
-    select {
-      cursor: url('../img/cursor-mao.svg') 3 2, pointer;
-    }
-
-    /* O cursor de texto continua sendo o do sistema: numa caixa de texto o
-       I-beam diz onde o caractere vai cair, e uma seta bonita esconderia
-       essa informação. */
-    input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']),
-    textarea {
+    /* A exceção: em campo de texto o I-beam do sistema volta. Ele diz onde o
+       caractere vai cair, e nenhum desenho próprio carrega essa informação —
+       trocá-lo por um ponto seria perder função por estética. */
+    html.cursor-proprio input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']),
+    html.cursor-proprio textarea {
       cursor: text;
     }
 
-    /* Desabilitado vence o "selecionável" acima — mesmo com o seletor de
-       cima sendo mais específico em alguns casos, este vem depois e trata
-       o estado, que é o que importa comunicar. */
+    /* Sem o cursor próprio (script ausente), o desabilitado ainda precisa
+       se anunciar. */
     button:disabled,
     [aria-disabled='true'] {
       cursor: not-allowed;
     }
+  }
+
+  /* =====================================================================
+   * As duas peças do cursor
+   *
+   * `position: fixed` e `translate3d` escrito por quadro: as duas ficam
+   * numa camada própria de composição, então mover o cursor não repinta
+   * nada da página. `pointer-events: none` é obrigatório — sem ele o
+   * próprio cursor ficaria entre o ponteiro e os links.
+   *
+   * Não têm transição de posição de propósito: quem suaviza é a inércia do
+   * cursor.js, e uma transition por cima brigaria com ela.
+   * ================================================================== */
+
+  .cursor-ponto,
+  .cursor-anel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* O ponto: exato, sempre no ponteiro. É o alvo do clique. */
+  .cursor-ponto {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgb(var(--osso));
+    /* O halo escuro separa o ponto de um fundo claro — uma imagem de projeto
+       ou um PDF de certificado engoliriam um ponto de osso puro. */
+    box-shadow: 0 0 0 1px rgb(var(--onix) / 0.55);
+  }
+
+  /* O anel: arrasta atrás, abre sobre o que é clicável. */
+  .cursor-anel {
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    border: 1.5px solid rgb(var(--carmim-claro));
+    /* Só a escala e a opacidade transicionam — a posição é escrita por
+       quadro e não pode passar por aqui. */
+    transition: width 0.2s, height 0.2s, background-color 0.2s;
+  }
+
+  /* O retorno do clique: o anel encolhe e volta. */
+  .cursor-anel-premido {
+    background-color: rgb(var(--carmim-claro) / 0.18);
+  }
+
+  /* Ponteiro fora da janela: as duas peças somem em vez de congelar na
+     borda como se o mouse ainda estivesse ali. */
+  .cursor-fora .cursor-ponto,
+  .cursor-fora .cursor-anel {
+    opacity: 0 !important;
   }
 }
 
@@ -365,6 +416,27 @@
     text-wrap: balance;
   }
 
+  /* O nome no topo — a única coisa da página que usa a Space Grotesk.
+   *
+   * Ela substitui a Bricolage AQUI e só aqui: em corpo grande a Bricolage
+   * arredonda o ombro do 'R' e a barriga do 'G' o bastante para o nome ler
+   * como simpático, e o topo não é o lugar disso. A Space Grotesk corta os
+   * mesmos traços em ângulo e compartilha o desenho do JetBrains Mono que já
+   * marca os rótulos, então o topo passa a rimar com a página.
+   *
+   * O espacejamento é MAIS ABERTO que o do `.titulo-display` (-0.02em):
+   * a Space Grotesk já é mais estreita, e em caixa alta não há ascendente
+   * nem descendente para arejar o ritmo — apertar aqui grudaria as versais.
+   *
+   * Sem `font-optical-sizing`: esta família não tem eixo óptico, e declarar
+   * um eixo que não existe não faz nada além de confundir quem lê depois. */
+  .titulo-nome {
+    @apply font-nome font-bold uppercase text-osso;
+    letter-spacing: 0.005em;
+    line-height: 0.94;
+    text-wrap: balance;
+  }
+
   /* O brilho que segue o mouse sobre o nome, no topo.
    *
    * Um gradiente radial recortado no texto: carmim no centro, osso na borda.
@@ -386,12 +458,41 @@
   .nome-brilho {
     --mx: -9999px;
     --my: 50%;
+    /* Quanto o brilho está aceso, de 0 a 1. O nome.js baixa este valor
+       conforme o cursor se afasta, e é o que faz o efeito CRESCER na
+       aproximação em vez de aparecer inteiro de uma vez. */
+    --forca: 0;
+
+    /* O RAIO É O AJUSTE PRINCIPAL, e é pequeno de propósito.
+     *
+     * A primeira versão usava 16ch — quase a largura do nome inteiro, então
+     * mover o mouse pintava tudo de carmim e o efeito virava "o nome é
+     * vermelho agora". Uma poça de 4,5ch acende três ou quatro letras: dá
+     * para ver o nome em osso E a região acesa ao mesmo tempo, que é o que
+     * faz o efeito ser lido como um facho passando por cima.
+     *
+     * As paradas intermediárias são o que resolve o "só pinta se estiver em
+     * cima da letra": a cor não corta na borda, ela decai até 100%. A parada
+     * de 55% ainda é carmim forte, a de 100% já é osso puro — no meio há uma
+     * faixa larga de mistura, e é ela que faz uma letra VIZINHA à do cursor
+     * receber um tom parcial em vez de nada. O alcance real do efeito é o
+     * dobro do núcleo aceso. */
     background-image: radial-gradient(
-      16ch 8ch at var(--mx) var(--my),
-      rgb(var(--carmim-claro)) 0%,
-      rgb(var(--carmim-claro) / 0.55) 35%,
-      rgb(var(--osso)) 70%
+      4.5ch 4.5ch at var(--mx) var(--my),
+      rgb(var(--carmim-claro) / var(--forca)) 0%,
+      rgb(var(--carmim-claro) / var(--forca)) 22%,
+      rgb(var(--carmim-claro) / calc(var(--forca) * 0.72)) 45%,
+      rgb(var(--carmim-claro) / calc(var(--forca) * 0.35)) 68%,
+      rgb(var(--osso) / 0) 100%
     );
+
+    /* O osso vem do `background-color`, e não de uma parada do gradiente.
+     *
+     * Com a força variável, as paradas de carmim ficam TRANSLÚCIDAS — e um
+     * gradiente translúcido sobre nada deixaria as letras esmaecidas em vez
+     * de ossos. Pintar o osso sólido atrás e deixar o carmim compor por cima
+     * mantém o nome na cor certa em qualquer força, inclusive em zero. */
+    background-color: rgb(var(--osso));
     background-repeat: no-repeat;
     -webkit-background-clip: text;
     background-clip: text;
@@ -482,18 +583,12 @@
            inline-flex items-center gap-1.5 whitespace-nowrap;
   }
 
-  /* O cursor do filtro precisa ser declarado AQUI, e não junto das outras
-     regras de cursor no @layer base.
-
-     O `cursor-pointer` que estava na linha acima é uma utilitária do
-     Tailwind, e a camada de componentes é emitida DEPOIS da base — ela
-     vencia a regra de `button` lá de cima e o filtro ficava com a setinha
-     do sistema. Trocar a utilitária pela url() no próprio bloco resolve sem
-     depender de ordem de camada. */
-  @media (pointer: fine) {
-    .tag-filtro {
-      cursor: url('../img/cursor-mao.svg') 3 2, pointer;
-    }
+  /* O `cursor-pointer` saiu da lista acima porque o cursor próprio esconde
+     o nativo de qualquer forma. Ele volta como reserva para quando o
+     cursor.js não roda — aí o ponteiro do sistema é tudo que existe, e o
+     filtro precisa se anunciar como clicável. */
+  html:not(.cursor-proprio) .tag-filtro {
+    cursor: pointer;
   }
 
   .tag-filtro.tag-ativa {

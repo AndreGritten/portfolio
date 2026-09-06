@@ -59,6 +59,14 @@
   <script defer src="{% estatico 'js/interface.js' %}"></script>
   <script defer src="{% estatico 'js/alpine.min.js' %}"></script>
 
+  {% comment %}
+    O cursor próprio. Vale na página inteira, por isso vem daqui e não do
+    home.html — e é ele que esconde o cursor nativo, marcando a classe
+    `cursor-proprio` no <html> só depois de desenhar as duas peças. Se este
+    script não rodar, a classe não entra e o ponteiro do sistema continua.
+  {% endcomment %}
+  <script defer src="{% estatico 'js/cursor.js' %}"></script>
+
   {% block cabeca_extra %}{% endblock %}
 </head>
 
