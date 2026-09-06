@@ -598,26 +598,24 @@
                       </ul>
                     {% endif %}
 
-                    {% comment %}
-                      Só "Ver no ar". O botão de "Código" saiu: o cartão passa
-                      a ter uma ação só, e uma ação só não precisa disputar
-                      atenção com nada — quem chega no projeto quer ver o
-                      projeto, não o repositório.
-
-                      O `link_github` continua no modelo e no admin. Ele não é
-                      mais mostrado aqui, mas segue cadastrável para quando
-                      houver onde exibi-lo.
-                    {% endcomment %}
                     <div class="mt-auto flex flex-wrap gap-2">
+                      {% if projeto.link_github %}
+                        <a href="{{ projeto.link_github }}" target="_blank" rel="noopener"
+                           class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                          {% icone "Github" size=14 aria_hidden="true" %}
+                          Código
+                        </a>
+                      {% endif %}
                       {% if projeto.link_deploy %}
                         <a href="{{ projeto.link_deploy }}" target="_blank" rel="noopener"
                            class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
                           {% icone "ArrowUpRight" size=14 aria_hidden="true" %}
                           Ver no ar
                         </a>
-                      {% else %}
+                      {% endif %}
+                      {% if not projeto.link_github and not projeto.link_deploy %}
                         <span class="font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
-                          Em desenvolvimento
+                          Repositório privado
                         </span>
                       {% endif %}
                     </div>
