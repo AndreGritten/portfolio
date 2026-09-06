@@ -359,8 +359,42 @@
     @apply pointer-events-none absolute inset-0 z-0;
   }
 
+  /* O `-mt-secao` corrige uma lacuna de 112px no topo — MEDIDA, não suposta:
+   * com o invólucro em `top: 88`, o canvas começava em `top: 200`.
+   *
+   * A causa é sutil. O `.campo` é `absolute inset-0`, o que o ancora no
+   * PADDING BOX da <section> — ele de fato cobre a seção inteira. Mas o
+   * canvas dentro dele é `sticky`, e sticky é in-flow: um filho em fluxo
+   * começa no CONTENT box do pai, depois do padding. Como a seção tem
+   * `py-secao` (7rem = 112px), o canvas nascia 112px abaixo do topo.
+   *
+   * Era exatamente a faixa em que a treliça não reagia: ali não havia
+   * canvas, só a `.malha-tecnica` do fundo, que é CSS estático. Dois
+   * quadrados da malha (56px cada) — a medida que denunciou o defeito.
+   *
+   * A margem negativa puxa o canvas de volta ao topo da seção. Ela precisa
+   * casar com o `py-secao` das seções que hospedam o campo; as três usam o
+   * mesmo token, então há um valor só a manter em sincronia. */
+  /* `absolute top-0` no lugar de `sticky`, e a razão é medida.
+   *
+   * O canvas nascia 112px abaixo do topo da seção — a faixa em que a
+   * treliça não reagia, porque ali não havia canvas, só a `.malha-tecnica`
+   * do fundo, que é CSS estático. São dois quadrados da malha (56px cada),
+   * a medida que denunciou o defeito.
+   *
+   * O `sticky` é in-flow, então o canvas começava no CONTENT box da seção,
+   * depois do `py-secao` (7rem). Uma margem negativa não resolvia: o
+   * reposicionamento do sticky a descarta.
+   *
+   * Com `absolute top-0` ele se ancora no invólucro — que é `inset-0` e
+   * cobre a seção inteira —, colando no topo de verdade. A altura continua
+   * `100svh`, então o buffer não cresce com a seção presa pelo pin, que era
+   * a razão original de existir o sticky. O que se perde é o
+   * acompanhamento da rolagem dentro da seção; o desenho passa a ficar
+   * ancorado no topo dela, e como o campo é um fundo de textura, isso não
+   * se nota. */
   .campo > canvas {
-    @apply sticky top-0 block h-[100svh] w-full;
+    @apply absolute inset-x-0 top-0 block h-[100svh] w-full;
   }
 
   /* =====================================================================
