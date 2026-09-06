@@ -414,6 +414,70 @@ if not DEBUG and not RODANDO_TESTES:
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 
+# ---------------------------------------------------------------------------
+# Registro
+#
+# Este bloco existe por um defeito concreto, não por boa prática: um 500 em
+# produção não deixava rastro nenhum. A configuração PADRÃO do Django
+# (`django.utils.log.DEFAULT_LOGGING`) manda o logger `django.request` para
+# dois destinos, e em produção os DOIS estão fechados:
+#
+#   console      -> filtro `require_debug_true`  — desligado com DEBUG=False
+#   mail_admins  -> AdminEmailHandler            — exige ADMINS, que não existe
+#
+# O resultado é que toda exceção não tratada era engolida em silêncio: a
+# página de erro aparecia para o visitante, o log de acesso registrava
+# "500 2145", e o traceback não era escrito em lugar nenhum. Foi exatamente o
+# que escondeu a causa do erro em /jarvis/ — procurar o traceback nos logs do
+# Render não adiantava, porque ele nunca chegou a existir.
+#
+# Fica FORA do `if not DEBUG` de propósito: em desenvolvimento o
+# comportamento é o mesmo de antes (o runserver já imprime tudo), e ter uma
+# única definição evita que o modo de produção seja o único caminho não
+# testado.
+#
+# O handler escreve no stdout porque é o que o Render captura e retém. Sem
+# arquivo: o disco do plano gratuito é efêmero, um log em arquivo sumiria no
+# deploy seguinte.
+# ---------------------------------------------------------------------------
+
+LOGGING = {
+    'version': 1,
+    # `False` porque desabilitar os loggers existentes silenciaria bibliotecas
+    # de terceiros que já estejam configuradas na hora em que este dicionário
+    # é lido.
+    'disable_existing_loggers': False,
+    'formatters': {
+        'completo': {
+            'format': '[{levelname}] {asctime} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'completo',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': config('LOG_LEVEL', default='INFO'),
+        },
+        # O logger que recebe toda exceção não tratada de uma view — é ele
+        # que carrega o traceback do 500.
+        #
+        # `propagate: False` evita a linha duplicada: sem isso a mensagem
+        # sobe também para o logger `django` acima, e cada erro apareceria
+        # duas vezes no painel.
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
 
 # Identificação do painel. NADA aqui conserta o 500 do admin — quem conserta é
 # o WHITENOISE_MANIFEST_STRICT lá em cima, junto de STORAGES. Este bloco é só
