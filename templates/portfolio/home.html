@@ -29,6 +29,13 @@
   <script defer src="{% estatico 'js/vendor/lenis.min.js' %}"></script>
   <script defer src="{% estatico 'js/campo.js' %}"></script>
   <script defer src="{% estatico 'js/narrativa.js' %}"></script>
+
+  {% comment %}
+    O brilho do nome. Carrega aqui e não no base.html porque o <h1> do topo
+    só existe nesta página — e o próprio script sai fora se não achar o
+    `[data-nome-brilho]`.
+  {% endcomment %}
+  <script defer src="{% estatico 'js/nome.js' %}"></script>
 {% endblock %}
 
 {% block corpo %}
@@ -74,7 +81,8 @@
         No "Sobre" ela fica junto do resto do perfil, que é onde alguém a
         procura de fato.
       {% endcomment %}
-      <h1 class="titulo-display revelar text-[clamp(2.3rem,7.8vw,5.6rem)]">
+      <h1 class="titulo-display revelar text-[clamp(2.3rem,7.8vw,5.6rem)]"
+          data-nome-brilho>
         {{ PESSOA.nome }}
       </h1>
 
@@ -377,71 +385,95 @@
                 iniciar; o `tabindex="-1"` no painel é o que permite mandar o
                 foco para dentro dele ao abrir — sem isso, o Tab seguinte
                 continuaria na página atrás do diálogo.
+
+                O `x-teleport="body"` NÃO é enfeite, e tirá-lo traz o defeito
+                de volta.
+
+                Este <li> é `.revelar`, e o `.movimento .revelar` do
+                input.css aplica `transform: translateY(14px)`. Um transform
+                diferente de `none` faz do elemento o BLOCO CONTENTOR dos
+                descendentes `position: fixed` — então o `inset-0` daqui de
+                baixo passava a ser resolvido contra a caixa do cartão, e não
+                contra a janela. O diálogo virava um painel gigante dentro da
+                célula da grade, transbordando por cima dos certificados
+                vizinhos.
+
+                E não era transitório: o narrativa.js anima para `y: 0`, o que
+                deixa `translate(0px, 0px)` inline. Zero ainda é transform, e
+                a armadilha continuava depois da revelação.
+
+                É a mesma razão pela qual o `data-parallax` saiu do topo —
+                veja o comentário lá em cima. O teleporte move o nó vivo para
+                o fim do <body>, fora de qualquer ancestral transformado,
+                mantendo o mesmo escopo do Alpine: `$refs`, o `aria-labelledby`
+                e o conteúdo do Django seguem funcionando sem mudança.
               {% endcomment %}
-              <div x-cloak x-show="aberto"
-                   x-transition.opacity.duration.200ms
-                   @keydown.escape.window="fechar()"
-                   class="fixed inset-0 z-[70] flex items-center justify-center p-4"
-                   role="dialog" aria-modal="true"
-                   aria-labelledby="cert-titulo-{{ cert.pk }}">
-                <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
+              <template x-teleport="body">
+                <div x-cloak x-show="aberto"
+                     x-transition.opacity.duration.200ms
+                     @keydown.escape.window="fechar()"
+                     class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                     role="dialog" aria-modal="true"
+                     aria-labelledby="cert-titulo-{{ cert.pk }}">
+                  <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
 
-                <div x-ref="dialogo" tabindex="-1"
-                     class="card relative w-full max-w-lg border-borda-forte bg-fundo p-7 shadow-2xl shadow-black/60">
-                  <div class="mb-5 flex items-start justify-between gap-4">
-                    <span class="text-carmim-claro">{% icone "Award" size=26 aria_hidden="true" %}</span>
-                    <button type="button" @click="fechar()" aria-label="Fechar"
-                            class="-m-1 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
-                      {% icone "X" size=19 %}
-                    </button>
-                  </div>
-
-                  <h3 id="cert-titulo-{{ cert.pk }}" class="titulo-cartao mb-4 text-xl">
-                    {{ cert.nome }}
-                  </h3>
-
-                  <dl class="mb-6 grid grid-cols-2 gap-4 border-y border-borda py-4 text-sm">
-                    <div>
-                      <dt class="rotulo rotulo-mudo mb-1">Instituição</dt>
-                      <dd class="text-osso">{{ cert.instituicao_emissora }}</dd>
+                  <div x-ref="dialogo" tabindex="-1"
+                       class="card relative w-full max-w-lg border-borda-forte bg-fundo p-7 shadow-2xl shadow-black/60">
+                    <div class="mb-5 flex items-start justify-between gap-4">
+                      <span class="text-carmim-claro">{% icone "Award" size=26 aria_hidden="true" %}</span>
+                      <button type="button" @click="fechar()" aria-label="Fechar"
+                              class="-m-1 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+                        {% icone "X" size=19 %}
+                      </button>
                     </div>
-                    <div>
-                      <dt class="rotulo rotulo-mudo mb-1">Emissão</dt>
-                      <dd class="text-osso">{{ cert.data_emissao|date:"d/m/Y" }}</dd>
-                    </div>
-                    {% if cert.carga_horaria %}
+
+                    <h3 id="cert-titulo-{{ cert.pk }}" class="titulo-cartao mb-4 text-xl">
+                      {{ cert.nome }}
+                    </h3>
+
+                    <dl class="mb-6 grid grid-cols-2 gap-4 border-y border-borda py-4 text-sm">
                       <div>
-                        <dt class="rotulo rotulo-mudo mb-1">Carga horária</dt>
-                        <dd class="text-osso">{{ cert.carga_horaria }} horas</dd>
+                        <dt class="rotulo rotulo-mudo mb-1">Instituição</dt>
+                        <dd class="text-osso">{{ cert.instituicao_emissora }}</dd>
                       </div>
-                    {% endif %}
-                    <div>
-                      <dt class="rotulo rotulo-mudo mb-1">Categoria</dt>
-                      <dd class="text-osso">{{ cert.get_categoria_display }}</dd>
-                    </div>
-                  </dl>
+                      <div>
+                        <dt class="rotulo rotulo-mudo mb-1">Emissão</dt>
+                        <dd class="text-osso">{{ cert.data_emissao|date:"d/m/Y" }}</dd>
+                      </div>
+                      {% if cert.carga_horaria %}
+                        <div>
+                          <dt class="rotulo rotulo-mudo mb-1">Carga horária</dt>
+                          <dd class="text-osso">{{ cert.carga_horaria }} horas</dd>
+                        </div>
+                      {% endif %}
+                      <div>
+                        <dt class="rotulo rotulo-mudo mb-1">Categoria</dt>
+                        <dd class="text-osso">{{ cert.get_categoria_display }}</dd>
+                      </div>
+                    </dl>
 
-                  <div class="flex flex-wrap gap-2">
-                    {% if cert.link_credencial %}
-                      <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener" class="btn-osso !text-xs">
-                        {% icone "ExternalLink" size=14 aria_hidden="true" %}
-                        Verificar credencial
-                      </a>
-                    {% endif %}
-                    {% if cert.arquivo_pdf %}
-                      <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener" class="btn-linha !text-xs">
-                        {% icone "FileText" size=14 aria_hidden="true" %}
-                        Abrir PDF
-                      </a>
-                    {% endif %}
-                    {% if not cert.tem_verificacao %}
-                      <p class="text-sm text-secundaria">
-                        Sem link de verificação cadastrado.
-                      </p>
-                    {% endif %}
+                    <div class="flex flex-wrap gap-2">
+                      {% if cert.link_credencial %}
+                        <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener" class="btn-osso !text-xs">
+                          {% icone "ExternalLink" size=14 aria_hidden="true" %}
+                          Verificar credencial
+                        </a>
+                      {% endif %}
+                      {% if cert.arquivo_pdf %}
+                        <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener" class="btn-linha !text-xs">
+                          {% icone "FileText" size=14 aria_hidden="true" %}
+                          Abrir PDF
+                        </a>
+                      {% endif %}
+                      {% if not cert.tem_verificacao %}
+                        <p class="text-sm text-secundaria">
+                          Sem link de verificação cadastrado.
+                        </p>
+                      {% endif %}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </template>
             </li>
           {% endfor %}
         </ul>
