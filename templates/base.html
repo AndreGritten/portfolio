@@ -67,6 +67,12 @@
   {% endcomment %}
   <script defer src="{% estatico 'js/cursor.js' %}"></script>
 
+  {% comment %}
+    O brilho dos textos. Acha os `[data-brilho]` sozinho e sai fora se não
+    houver nenhum, então serve qualquer página que marque os seus.
+  {% endcomment %}
+  <script defer src="{% estatico 'js/brilho.js' %}"></script>
+
   {% block cabeca_extra %}{% endblock %}
 </head>
 

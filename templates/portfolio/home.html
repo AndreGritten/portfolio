@@ -29,13 +29,6 @@
   <script defer src="{% estatico 'js/vendor/lenis.min.js' %}"></script>
   <script defer src="{% estatico 'js/campo.js' %}"></script>
   <script defer src="{% estatico 'js/narrativa.js' %}"></script>
-
-  {% comment %}
-    O brilho do nome. Carrega aqui e não no base.html porque o <h1> do topo
-    só existe nesta página — e o próprio script sai fora se não achar o
-    `[data-nome-brilho]`.
-  {% endcomment %}
-  <script defer src="{% estatico 'js/nome.js' %}"></script>
 {% endblock %}
 
 {% block corpo %}
@@ -81,8 +74,12 @@
         No "Sobre" ela fica junto do resto do perfil, que é onde alguém a
         procura de fato.
       {% endcomment %}
+      {% comment %}
+        O `--raio-brilho` maior é local: o nome é o maior corpo de texto da
+        página, e a poça padrão de 4,5ch acenderia menos de uma letra aqui.
+      {% endcomment %}
       <h1 class="titulo-nome revelar text-[clamp(2.3rem,7.8vw,5.6rem)]"
-          data-nome-brilho>
+          data-brilho style="--raio-brilho: 2.6ch">
         {{ PESSOA.nome }}
       </h1>
 
@@ -130,8 +127,8 @@
   <section id="sobre" class="bg-onix px-6 py-secao">
     <div class="mx-auto max-w-6xl" data-revelar-grupo>
 
-      <p class="rotulo revelar mb-3">Sobre</p>
-      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <p data-brilho class="rotulo revelar mb-3">Sobre</p>
+      <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
         Quem escreve o código
       </h2>
 
@@ -210,8 +207,8 @@
   <section id="trajetoria" class="border-y border-borda bg-breu px-6 py-secao">
     <div class="mx-auto max-w-6xl">
 
-      <p class="rotulo revelar mb-3">Trajetória</p>
-      <h2 class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <p data-brilho class="rotulo revelar mb-3">Trajetória</p>
+      <h2 data-brilho class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
         Experiência &amp; formação
       </h2>
 
@@ -318,8 +315,8 @@
   <section id="certificacoes" class="bg-onix px-6 py-secao">
     <div class="mx-auto max-w-6xl">
 
-      <p class="rotulo revelar mb-3">Certificações</p>
-      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <p data-brilho class="rotulo revelar mb-3">Certificações</p>
+      <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
         O que está comprovado
       </h2>
       <p class="revelar mb-12 max-w-[58ch] text-secundaria">
@@ -506,8 +503,8 @@
     {# `relative z-10`: sem isto o canvas, por ser posicionado, pintaria por cima do conteúdo em fluxo. #}
     <div class="relative z-10 mx-auto max-w-6xl">
 
-      <p class="rotulo revelar mb-3">Projetos</p>
-      <h2 class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <p data-brilho class="rotulo revelar mb-3">Projetos</p>
+      <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
         O que eu construí
       </h2>
 
@@ -640,8 +637,8 @@
   <section id="habilidades" class="bg-onix px-6 py-secao">
     <div class="mx-auto max-w-6xl">
 
-      <p class="rotulo revelar mb-3">Habilidades</p>
-      <h2 class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
+      <p data-brilho class="rotulo revelar mb-3">Habilidades</p>
+      <h2 data-brilho class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
         Ferramentas de trabalho
       </h2>
 
@@ -695,8 +692,8 @@
       <div class="grid gap-14 lg:grid-cols-[1fr_1.2fr]">
 
         <div data-revelar-grupo>
-          <p class="rotulo revelar mb-3">Contato</p>
-          <h2 class="titulo-secao revelar mb-5 text-[clamp(1.8rem,4.5vw,3rem)]">
+          <p data-brilho class="rotulo revelar mb-3">Contato</p>
+          <h2 data-brilho class="titulo-secao revelar mb-5 text-[clamp(1.8rem,4.5vw,3rem)]">
             Vamos conversar
           </h2>
           <p class="revelar mb-9 max-w-[42ch] leading-relaxed text-secundaria">

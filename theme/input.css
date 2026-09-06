@@ -194,6 +194,13 @@
     left: 0;
     z-index: 9999;
     pointer-events: none;
+  }
+
+  /* O `will-change` fica só no ponto, que muda exclusivamente de posição.
+     No anel ele seria contraproducente: a camada promovida é rasterizada
+     uma vez, e como o anel muda de TAMANHO a cada quadro, a borda sairia da
+     textura antiga esticada — de novo o efeito borrado que o scale causava. */
+  .cursor-ponto {
     will-change: transform;
   }
 
@@ -208,15 +215,22 @@
     box-shadow: 0 0 0 1px rgb(var(--onix) / 0.55);
   }
 
-  /* O anel: arrasta atrás, abre sobre o que é clicável. */
+  /* O anel: arrasta atrás, abre sobre o que é clicável.
+   *
+   * `width`/`height` NÃO são declarados aqui — o cursor.js os escreve a cada
+   * quadro, e é isso que mantém a borda nítida quando ele abre. Uma versão
+   * anterior crescia por `transform: scale()`, e o navegador ampliava o
+   * bitmap já rasterizado: a borda de 1,5px virava um traço grosso e
+   * borrado. O tamanho real redesenha o círculo.
+   *
+   * Sem `transition` de tamanho pelo mesmo motivo: quem interpola é o lerp
+   * do rAF, e uma transição por cima criaria dois animadores disputando a
+   * mesma propriedade. Só a cor de fundo transiciona, porque essa é trocada
+   * por classe no clique. */
   .cursor-anel {
-    width: 30px;
-    height: 30px;
     border-radius: 9999px;
     border: 1.5px solid rgb(var(--carmim-claro));
-    /* Só a escala e a opacidade transicionam — a posição é escrita por
-       quadro e não pode passar por aqui. */
-    transition: width 0.2s, height 0.2s, background-color 0.2s;
+    transition: background-color 0.18s;
   }
 
   /* O retorno do clique: o anel encolhe e volta. */
@@ -455,48 +469,75 @@
    *
    * Sem `transition` aqui: a suavização é o requestAnimationFrame do
    * nome.js, e uma transição na posição do gradiente brigaria com ele. */
-  .nome-brilho {
+  .texto-brilho {
     --mx: -9999px;
     --my: 50%;
-    /* Quanto o brilho está aceso, de 0 a 1. O nome.js baixa este valor
+    /* Quanto o brilho está aceso, de 0 a 1. O brilho.js baixa este valor
        conforme o cursor se afasta, e é o que faz o efeito CRESCER na
        aproximação em vez de aparecer inteiro de uma vez. */
     --forca: 0;
+
+    /* O raio da poça. Em `ch`, então ele acompanha o corpo do texto: no nome
+       do topo a poça é grande em px, num título de seção é proporcionalmente
+       menor, e os dois acendem o MESMO NÚMERO DE LETRAS. Um raio em px teria
+       de ser reescrito para cada tamanho de fonte da página. */
+    --raio-brilho: 4.5ch;
+
+    /* As duas cores do efeito: a do repouso e a que a poça acende. São
+       variáveis porque nem todo texto vai do mesmo para o mesmo — os
+       títulos repousam em osso e acendem em carmim, e o rótulo, que JÁ é
+       carmim, faz o inverso. */
+    --cor-brilho: var(--osso);
+    --cor-acesa: var(--carmim-claro);
 
     /* O RAIO É O AJUSTE PRINCIPAL, e é pequeno de propósito.
      *
      * A primeira versão usava 16ch — quase a largura do nome inteiro, então
      * mover o mouse pintava tudo de carmim e o efeito virava "o nome é
      * vermelho agora". Uma poça de 4,5ch acende três ou quatro letras: dá
-     * para ver o nome em osso E a região acesa ao mesmo tempo, que é o que
+     * para ver o texto em osso E a região acesa ao mesmo tempo, que é o que
      * faz o efeito ser lido como um facho passando por cima.
      *
      * As paradas intermediárias são o que resolve o "só pinta se estiver em
-     * cima da letra": a cor não corta na borda, ela decai até 100%. A parada
-     * de 55% ainda é carmim forte, a de 100% já é osso puro — no meio há uma
-     * faixa larga de mistura, e é ela que faz uma letra VIZINHA à do cursor
-     * receber um tom parcial em vez de nada. O alcance real do efeito é o
-     * dobro do núcleo aceso. */
+     * cima da letra": a cor não corta na borda, ela decai até 100%. No meio
+     * há uma faixa larga de mistura, e é ela que faz uma letra VIZINHA à do
+     * cursor receber um tom parcial em vez de nada. */
     background-image: radial-gradient(
-      4.5ch 4.5ch at var(--mx) var(--my),
-      rgb(var(--carmim-claro) / var(--forca)) 0%,
-      rgb(var(--carmim-claro) / var(--forca)) 22%,
-      rgb(var(--carmim-claro) / calc(var(--forca) * 0.72)) 45%,
-      rgb(var(--carmim-claro) / calc(var(--forca) * 0.35)) 68%,
-      rgb(var(--osso) / 0) 100%
+      var(--raio-brilho) var(--raio-brilho) at var(--mx) var(--my),
+      rgb(var(--cor-acesa) / var(--forca)) 0%,
+      rgb(var(--cor-acesa) / var(--forca)) 22%,
+      rgb(var(--cor-acesa) / calc(var(--forca) * 0.72)) 45%,
+      rgb(var(--cor-acesa) / calc(var(--forca) * 0.35)) 68%,
+      rgb(var(--cor-acesa) / 0) 100%
     );
 
-    /* O osso vem do `background-color`, e não de uma parada do gradiente.
+    /* A cor de repouso vem do `background-color`, e não de uma parada do
+     * gradiente.
      *
      * Com a força variável, as paradas de carmim ficam TRANSLÚCIDAS — e um
      * gradiente translúcido sobre nada deixaria as letras esmaecidas em vez
-     * de ossos. Pintar o osso sólido atrás e deixar o carmim compor por cima
-     * mantém o nome na cor certa em qualquer força, inclusive em zero. */
-    background-color: rgb(var(--osso));
+     * de sólidas. Pintar a cor sólida atrás e deixar o carmim compor por
+     * cima mantém o texto na cor certa em qualquer força, inclusive zero. */
+    background-color: rgb(var(--cor-brilho));
     background-repeat: no-repeat;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /* O rótulo INVERTE o efeito, e é o único que faz isso.
+   *
+   * Ele já nasce em carmim-claro, então acender carmim sobre carmim não
+   * mudaria nada — a poça precisa ir para o osso. O par rótulo + título
+   * passa a acender em direções opostas, e é isso que faz os dois lerem
+   * como uma coisa só quando o cursor chega: um esquenta, o outro clareia.
+   *
+   * A poça também é menor: o rótulo é minúsculo (0,65rem) e bem espaçado,
+   * e a poça padrão o cobriria inteiro de uma vez. */
+  .rotulo.texto-brilho {
+    --raio-brilho: 3ch;
+    --cor-brilho: var(--carmim-claro);
+    --cor-acesa: var(--osso);
   }
 
   .titulo-secao {

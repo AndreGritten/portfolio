@@ -68,6 +68,11 @@
   var LERP_ANEL = 0.18 /* ~90ms de constante de tempo a 60fps */
   var LERP_FORCA = 0.14
 
+  /* Os dois diâmetros, em px. O anel é desenhado NESTE tamanho — não há
+     escala envolvida, justamente para a borda não borrar (ver `quadro`). */
+  var TAMANHO_ANEL = 30
+  var TAMANHO_ANEL_ABERTO = 58
+
   var rodando = false
   var dentro = false
 
@@ -85,9 +90,22 @@
 
     ponto.style.transform =
       'translate3d(' + alvoX + 'px,' + alvoY + 'px,0) translate(-50%,-50%)'
+
+    /* O TAMANHO VAI EM width/height, e NUNCA em scale().
+     *
+     * Com `scale()` o navegador amplia o bitmap já rasterizado do anel: uma
+     * borda de 1,5px vira 3px BORRADOS, e o círculo ganha aquele contorno
+     * chapado e sujo. Escrevendo a medida real, o anel é redesenhado no
+     * tamanho novo a cada quadro e a borda continua com a mesma espessura
+     * nítida, aberto ou fechado.
+     *
+     * O custo é um layout por quadro num elemento `position: fixed`, que
+     * não participa do fluxo — barato, e o preço certo pela nitidez. */
+    var d = TAMANHO_ANEL + forca * (TAMANHO_ANEL_ABERTO - TAMANHO_ANEL)
+    anel.style.width = d + 'px'
+    anel.style.height = d + 'px'
     anel.style.transform =
-      'translate3d(' + anelX + 'px,' + anelY + 'px,0) translate(-50%,-50%) ' +
-      'scale(' + (1 + forca * 1.1) + ')'
+      'translate3d(' + anelX + 'px,' + anelY + 'px,0) translate(-50%,-50%)'
     anel.style.opacity = 0.35 + forca * 0.45
 
     /* O que o campo.js lê. Publicado a cada quadro para os dois efeitos
