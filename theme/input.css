@@ -345,16 +345,11 @@
    * Se a malha é o papel, o campo é o que está desenhado nele. Vive nas
    * mesmas três seções que a `.malha-tecnica` marca como as que respiram.
    *
-   * O `sticky` no canvas é o ponto inteiro desta regra. O invólucro cobre a
-   * seção toda, e a seção de projetos fica GIGANTE quando o ScrollTrigger
-   * prende a esteira e injeta o espaçador. Um canvas `inset-0` ali dentro
-   * seria um buffer de vários milhares de pixels de altura — dezenas de MB
-   * para pintar um desenho que só se vê uma janela por vez. Preso ao topo,
-   * ele tem sempre a altura da tela, custe o que custar à seção.
+   * O invólucro cobre a seção toda, e o canvas dentro dele acompanha — a
+   * regra abaixo explica por que ele deixou de ser `sticky`.
    *
-   * Consequência que precisa ficar escrita: o `overflow-hidden` que recorta
-   * o campo vai na <section>, NUNCA neste invólucro. Overflow entre o
-   * elemento preso e o contêiner de rolagem desliga o `sticky`. */
+   * O `overflow-hidden` que recorta o campo mora na <section>, e não aqui:
+   * é ele que limita o desenho às bordas da seção. */
   .campo {
     @apply pointer-events-none absolute inset-0 z-0;
   }
@@ -375,26 +370,37 @@
    * A margem negativa puxa o canvas de volta ao topo da seção. Ela precisa
    * casar com o `py-secao` das seções que hospedam o campo; as três usam o
    * mesmo token, então há um valor só a manter em sincronia. */
-  /* `absolute top-0` no lugar de `sticky`, e a razão é medida.
+  /* O canvas cobre a SEÇÃO INTEIRA, e não uma tela.
    *
-   * O canvas nascia 112px abaixo do topo da seção — a faixa em que a
-   * treliça não reagia, porque ali não havia canvas, só a `.malha-tecnica`
-   * do fundo, que é CSS estático. São dois quadrados da malha (56px cada),
-   * a medida que denunciou o defeito.
+   * Duas lacunas foram corrigidas aqui, ambas medidas no navegador, e a
+   * segunda desfez a premissa da primeira.
    *
-   * O `sticky` é in-flow, então o canvas começava no CONTENT box da seção,
-   * depois do `py-secao` (7rem). Uma margem negativa não resolvia: o
-   * reposicionamento do sticky a descarta.
+   * Com `sticky`, o canvas nascia 112px abaixo do topo — sticky é in-flow, e
+   * um filho em fluxo começa no content box do pai, depois do `py-secao`.
+   * Trocar por `absolute top-0` colou o topo, mas deixou 222px descobertos
+   * no RODAPÉ: a seção tem 1122px e o canvas tinha 900px (uma tela).
    *
-   * Com `absolute top-0` ele se ancora no invólucro — que é `inset-0` e
-   * cobre a seção inteira —, colando no topo de verdade. A altura continua
-   * `100svh`, então o buffer não cresce com a seção presa pelo pin, que era
-   * a razão original de existir o sticky. O que se perde é o
-   * acompanhamento da rolagem dentro da seção; o desenho passa a ficar
-   * ancorado no topo dela, e como o campo é um fundo de textura, isso não
-   * se nota. */
+   * Nas duas faixas o sintoma era o mesmo — ali não havia canvas, só a
+   * `.malha-tecnica` do fundo, que é CSS estático e não reage ao cursor.
+   *
+   * `inset-0` resolve os dois lados de uma vez: o canvas passa a ter
+   * exatamente as medidas do invólucro, que cobre a seção toda.
+   *
+   * E O CUSTO DE MEMÓRIA, que era a razão de existir o sticky?
+   *
+   * Medido, ele não se sustenta. O receio era a seção virar "vários
+   * milhares de pixels" quando o ScrollTrigger prende a esteira — mas o
+   * pin-spacer é injetado DENTRO da seção, em volta da esteira, e não
+   * estica a <section>. Com o pin ativo ela mede os mesmos 1122px, e o
+   * buffer fica em 6,5MB no pior caso das três seções.
+   *
+   * O campo.js ainda por cima trata o ciclo de vida: `alocar()` só reserva
+   * quando a seção entra na tela, `liberar()` zera as dimensões ao sair — e
+   * zerar é o que devolve a memória de fato —, e `medir()` remonta a
+   * treliça se o tamanho mudar. Prender o canvas a uma tela era resolver no
+   * CSS um problema que o JS já resolve, ao custo de duas faixas mortas. */
   .campo > canvas {
-    @apply absolute inset-x-0 top-0 block h-[100svh] w-full;
+    @apply absolute inset-0 block h-full w-full;
   }
 
   /* =====================================================================
