@@ -125,6 +125,60 @@
   [x-cloak] {
     display: none !important;
   }
+
+  /* =====================================================================
+   * CURSOR
+   *
+   * Dois SVGs próprios: a seta de exploração e a variante de selecionável.
+   * O desenho mora em static/img/, e os caminhos aqui são relativos ao
+   * arquivo de SAÍDA (static/css/app.css) — daí o `../img/`. Em produção o
+   * ManifestStaticFilesStorage reescreve estes url() para o nome com hash,
+   * que é justamente a forma que ele sabe tratar; usar {% static %} aqui
+   * não é possível nem necessário.
+   *
+   * A palavra-chave depois da vírgula não é opcional: é a sintaxe exigida,
+   * e é o que faz o Safari cair no cursor do sistema em vez de ficar sem
+   * cursor nenhum.
+   *
+   * `pointer: fine` e não uma consulta de largura: num tablete grande a
+   * largura passa, mas não existe ponteiro para desenhar. É o mesmo portão
+   * do campo.js — só que lá o corte é por largura (768px), então uma janela
+   * estreita COM mouse continua recebendo o cursor daqui.
+   *
+   * Sem gate de `prefers-reduced-motion`: cursor não é movimento, e quem
+   * pediu menos animação não pediu para perder a identidade da página.
+   * ================================================================== */
+
+  @media (pointer: fine) {
+    html {
+      cursor: url('../img/cursor-seta.svg') 3 2, default;
+    }
+
+    a[href],
+    button,
+    [role='button'],
+    summary,
+    label[for],
+    select {
+      cursor: url('../img/cursor-mao.svg') 3 2, pointer;
+    }
+
+    /* O cursor de texto continua sendo o do sistema: numa caixa de texto o
+       I-beam diz onde o caractere vai cair, e uma seta bonita esconderia
+       essa informação. */
+    input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']),
+    textarea {
+      cursor: text;
+    }
+
+    /* Desabilitado vence o "selecionável" acima — mesmo com o seletor de
+       cima sendo mais específico em alguns casos, este vem depois e trata
+       o estado, que é o que importa comunicar. */
+    button:disabled,
+    [aria-disabled='true'] {
+      cursor: not-allowed;
+    }
+  }
 }
 
 @layer components {
@@ -311,6 +365,39 @@
     text-wrap: balance;
   }
 
+  /* O brilho que segue o mouse sobre o nome, no topo.
+   *
+   * Um gradiente radial recortado no texto: carmim no centro, osso na borda.
+   * As duas variáveis são escritas pelo nome.js a cada quadro, e como a
+   * parada externa é o próprio `--osso`, as letras longe do ponteiro ficam
+   * EXATAMENTE na cor que teriam sem o efeito — não é um degradê por cima do
+   * título, é o título com uma janela acesa.
+   *
+   * `--mx` nasce fora da tela para o nome aparecer uniforme no carregamento:
+   * um valor central deixaria um borrão vermelho parado no meio do título
+   * durante a revelação, antes de o mouse chegar.
+   *
+   * A classe é ligada pelo JS, nunca no HTML. Sem JS, com movimento reduzido
+   * ou em toque, ela não entra e o `.titulo-display` pinta o nome em osso —
+   * a degradação sai de graça, sem @supports e sem regra de reserva.
+   *
+   * Sem `transition` aqui: a suavização é o requestAnimationFrame do
+   * nome.js, e uma transição na posição do gradiente brigaria com ele. */
+  .nome-brilho {
+    --mx: -9999px;
+    --my: 50%;
+    background-image: radial-gradient(
+      16ch 8ch at var(--mx) var(--my),
+      rgb(var(--carmim-claro)) 0%,
+      rgb(var(--carmim-claro) / 0.55) 35%,
+      rgb(var(--osso)) 70%
+    );
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .titulo-secao {
     @apply font-display font-semibold uppercase text-osso;
     letter-spacing: -0.015em;
@@ -391,8 +478,22 @@
            px-3 py-1.5 min-h-9 rounded-lg
            border-2 border-osso/15 bg-transparent text-secundaria
            hover:border-osso/35 hover:text-osso
-           transition-all duration-200 cursor-pointer
+           transition-all duration-200
            inline-flex items-center gap-1.5 whitespace-nowrap;
+  }
+
+  /* O cursor do filtro precisa ser declarado AQUI, e não junto das outras
+     regras de cursor no @layer base.
+
+     O `cursor-pointer` que estava na linha acima é uma utilitária do
+     Tailwind, e a camada de componentes é emitida DEPOIS da base — ela
+     vencia a regra de `button` lá de cima e o filtro ficava com a setinha
+     do sistema. Trocar a utilitária pela url() no próprio bloco resolve sem
+     depender de ordem de camada. */
+  @media (pointer: fine) {
+    .tag-filtro {
+      cursor: url('../img/cursor-mao.svg') 3 2, pointer;
+    }
   }
 
   .tag-filtro.tag-ativa {

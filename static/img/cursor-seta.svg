@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!--
+    A seta de exploração — o cursor padrão da página.
+
+    As dimensões em pixel na raiz são OBRIGATÓRIAS: Chrome e Firefox ignoram
+    um cursor SVG sem tamanho intrínseco e caem na palavra-chave de reserva.
+
+    As cores são hex literal, e não var(--osso): um SVG carregado como cursor
+    não enxerga as custom properties da página.
+
+    A ponta fica em (3, 2), que é o hotspot declarado no CSS. A variante
+    "selecionável" repete a mesma ponta de propósito — hotspot que salta ao
+    passar de um cursor para o outro é a marca de cursor customizado malfeito.
+  -->
+  <path d="M3 2 L3 21.5 L8.2 16.8 L11.7 24.6 L15.1 23.1 L11.7 15.5 L18.6 14.8 Z"
+        fill="#F2EDE6" stroke="#0B0A0C" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>
