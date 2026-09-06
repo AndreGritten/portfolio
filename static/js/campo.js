@@ -162,15 +162,38 @@
     var caixa = campo.tela.getBoundingClientRect()
     campo.esquerda = caixa.left
     campo.topo = caixa.top
+
+    /* O TAMANHO PODE MUDAR DEPOIS DA ALOCAÇÃO, e ignorar isso deixava uma
+     * faixa morta na treliça.
+     *
+     * O canvas é `sticky top-0` com `100svh`, e `alocar()` mede uma única
+     * vez: no quadro em que a seção ENTRA na tela. Nesse instante o canvas
+     * ainda não colou no topo, e a caixa devolvida pode ser mais baixa que
+     * a janela inteira. Os nós eram montados para essa altura menor e nunca
+     * mais remontados — então, depois que o sticky colava e o canvas passava
+     * a ocupar a tela toda, sobrava uma faixa no topo sem nó nenhum. Ela
+     * ficava com a `.malha-tecnica` do fundo aparecendo e não reagia ao
+     * cursor, porque ali literalmente não havia treliça.
+     *
+     * Remontar é barato e só acontece quando a medida realmente muda: uma
+     * vez ao colar, e depois nunca mais até um redimensionamento. O limiar
+     * de meio pixel evita remontar por arredondamento de sub-pixel a cada
+     * quadro, que era o risco de fazer isto sem comparar. */
+    if (
+      campo.alocado &&
+      (Math.abs(caixa.width - campo.largura) > 0.5 ||
+        Math.abs(caixa.height - campo.altura) > 0.5)
+    ) {
+      redimensionar(campo, caixa)
+    }
+
     return caixa
   }
 
-  /* Aloca o buffer e monta os nós. Chamado ao entrar na tela, não na carga:
-     um canvas do tamanho da janela em DPR 2 custa dezenas de MB, e não faz
-     sentido manter três deles vivos quando só um está sendo visto. */
-  function alocar(campo) {
-    var caixa = medir(campo)
-    if (!caixa.width || !caixa.height) return false
+  /* Reajusta o buffer e a treliça a um tamanho novo, preservando o estado.
+     Separado de `alocar()` porque este caminho roda com o campo já vivo. */
+  function redimensionar(campo, caixa) {
+    if (!caixa.width || !caixa.height) return
 
     var proporcao = Math.min(window.devicePixelRatio || 1, PROPORCAO_MAXIMA)
 
@@ -181,6 +204,16 @@
     campo.ctx.setTransform(proporcao, 0, 0, proporcao, 0, 0)
 
     montarNos(campo)
+  }
+
+  /* Aloca o buffer e monta os nós. Chamado ao entrar na tela, não na carga:
+     um canvas do tamanho da janela em DPR 2 custa dezenas de MB, e não faz
+     sentido manter três deles vivos quando só um está sendo visto. */
+  function alocar(campo) {
+    var caixa = medir(campo)
+    if (!caixa.width || !caixa.height) return false
+
+    redimensionar(campo, caixa)
     campo.alocado = true
     return true
   }

@@ -129,16 +129,9 @@
   /* =====================================================================
    * CURSOR
    *
-   * Dois SVGs próprios: a seta de exploração e a variante de selecionável.
-   * O desenho mora em static/img/, e os caminhos aqui são relativos ao
-   * arquivo de SAÍDA (static/css/app.css) — daí o `../img/`. Em produção o
-   * ManifestStaticFilesStorage reescreve estes url() para o nome com hash,
-   * que é justamente a forma que ele sabe tratar; usar {% static %} aqui
-   * não é possível nem necessário.
-   *
-   * A palavra-chave depois da vírgula não é opcional: é a sintaxe exigida,
-   * e é o que faz o Safari cair no cursor do sistema em vez de ficar sem
-   * cursor nenhum.
+   * O ponteiro do sistema some e quem desenha é o cursor.js — duas peças,
+   * definidas logo abaixo. Aqui ficam só as regras que decidem QUANDO o
+   * nativo se esconde.
    *
    * `pointer: fine` e não uma consulta de largura: num tablete grande a
    * largura passa, mas não existe ponteiro para desenhar. É o mesmo portão
@@ -451,6 +444,32 @@
     text-wrap: balance;
   }
 
+
+  .titulo-secao {
+    @apply font-display font-semibold uppercase text-osso;
+    letter-spacing: -0.015em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  /* Títulos de cartão ficam em caixa MISTA. Se tudo gritasse, nada gritaria —
+     e um nome de projeto em versais perde as maiúsculas que significam algo
+     (CAU-Uni, SQL, PUCPR). */
+  .titulo-cartao {
+    @apply font-display font-semibold text-osso;
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+  }
+
+  /* A sobrancelha em mono, acima dos títulos. */
+  .rotulo {
+    @apply font-mono text-[0.65rem] font-bold uppercase tracking-[0.18em] text-carmim-claro;
+  }
+
+  .rotulo-mudo {
+    @apply text-secundaria;
+  }
+
   /* O brilho que segue o mouse sobre o nome, no topo.
    *
    * Um gradiente radial recortado no texto: carmim no centro, osso na borda.
@@ -538,31 +557,6 @@
     --raio-brilho: 3ch;
     --cor-brilho: var(--carmim-claro);
     --cor-acesa: var(--osso);
-  }
-
-  .titulo-secao {
-    @apply font-display font-semibold uppercase text-osso;
-    letter-spacing: -0.015em;
-    line-height: 1;
-    text-wrap: balance;
-  }
-
-  /* Títulos de cartão ficam em caixa MISTA. Se tudo gritasse, nada gritaria —
-     e um nome de projeto em versais perde as maiúsculas que significam algo
-     (CAU-Uni, SQL, PUCPR). */
-  .titulo-cartao {
-    @apply font-display font-semibold text-osso;
-    letter-spacing: -0.025em;
-    line-height: 1.12;
-  }
-
-  /* A sobrancelha em mono, acima dos títulos. */
-  .rotulo {
-    @apply font-mono text-[0.65rem] font-bold uppercase tracking-[0.18em] text-carmim-claro;
-  }
-
-  .rotulo-mudo {
-    @apply text-secundaria;
   }
 
   /* O fio de 3px sob o nome e sob os títulos.
