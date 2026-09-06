@@ -486,6 +486,17 @@
   {# 5 · PROJETOS                                                         #}
   {# ==================================================================== #}
   {% comment %}
+    O separador entra no lugar do `border-y border-borda`, que era um fio de
+    1px quase invisível — na prática quem marcava a virada de seção era a
+    própria malha, e a troca lia como "começou o quadriculado" em vez de
+    "acabou a seção anterior".
+
+    O losango é preenchido com a cor da seção que vem DEPOIS dele, para o
+    fio não aparecer cortando a figura ao meio. Aqui é o breu dos projetos.
+  {% endcomment %}
+  <hr class="separador-secao" style="--cor-separador: var(--breu)" aria-hidden="true">
+
+  {% comment %}
     `relative overflow-hidden` na seção existe para o campo: o `relative` dá
     a caixa onde ele se ancora, e o `overflow-hidden` recorta o canvas preso
     nas bordas da seção. O recorte tem de morar AQUI e não no `.campo` —
@@ -493,7 +504,7 @@
     `sticky`, e o canvas voltaria a ter a altura inteira da seção presa.
   {% endcomment %}
   <section id="projetos"
-           class="relative overflow-hidden malha-tecnica border-y border-borda bg-breu px-6 py-secao"
+           class="relative overflow-hidden malha-tecnica bg-breu px-6 py-secao"
            x-data="filtroProjetos([{% for projeto in projetos %}'{{ projeto.slugs_tecnologias|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}])">
 
     <div class="campo" aria-hidden="true">
@@ -630,6 +641,9 @@
       {% endif %}
     </div>
   </section>
+
+  {# O fecho da seção de projetos. O losango leva o ônix, a cor de quem vem. #}
+  <hr class="separador-secao" style="--cor-separador: var(--onix)" aria-hidden="true">
 
   {# ==================================================================== #}
   {# 6 · HABILIDADES                                                      #}

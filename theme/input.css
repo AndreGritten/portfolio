@@ -566,6 +566,52 @@
     @apply h-[3px] w-20 rounded-sm bg-carmim-claro;
   }
 
+  /* =====================================================================
+   * SEPARADOR DE SEÇÃO
+   *
+   * O `border-y border-borda` que separava as seções é um fio de 1px em
+   * #322D38 — 1,48:1 sobre o ônix, quase invisível. Na prática quem marcava
+   * a virada era a `.malha-tecnica`, e por isso a troca de seção lia como
+   * "começou o quadriculado" em vez de "acabou a seção anterior".
+   *
+   * Este separador assume esse papel explicitamente. É a mesma gramática do
+   * campo — um fio horizontal com um nó no meio, como os traços da treliça
+   * que ligam nó a nó —, então ele não introduz uma forma nova na página:
+   * lê como o mesmo desenho, agora marcando a costura entre duas seções.
+   *
+   * O fio desvanece nas pontas em vez de bater na borda da janela. Um fio
+   * de ponta a ponta viraria uma régua e cortaria a página em dois; com as
+   * pontas transparentes ele fica ancorado no meio, que é onde o conteúdo
+   * está.
+   * ================================================================== */
+  .separador-secao {
+    @apply relative h-px w-full border-0;
+    background-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgb(var(--borda-forte) / 0.55) 22%,
+      rgb(var(--borda-forte) / 0.55) 78%,
+      transparent 100%
+    );
+  }
+
+  /* O nó no centro: um losango, a mesma figura que o campo.js desenha em
+     um terço dos nós da treliça. `rotate(45deg)` num quadrado, e não um
+     caractere ou um SVG, porque isto precisa acompanhar a cor do tema sem
+     um segundo arquivo para manter em sincronia. */
+  .separador-secao::after {
+    content: '';
+    @apply absolute left-1/2 top-1/2 h-[7px] w-[7px];
+    /* O translate vem ANTES do rotate: invertidos, o elemento gira em torno
+       do canto e sai do lugar. */
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 1px solid rgb(var(--carmim-claro) / 0.75);
+    /* Preenchido com a cor da seção de baixo, e não transparente: o fio
+       passa por trás do losango, e sem o preenchimento a linha cortaria a
+       figura ao meio. A variável é trocada por quem usa o separador. */
+    background: rgb(var(--cor-separador, var(--onix)));
+  }
+
   /* Link dentro de texto corrido.
      Sublinhado PERMANENTE, e não `hover:underline`: o reforço tem de existir
      antes da interação, não como recompensa por ela. Quem não passa o mouse
