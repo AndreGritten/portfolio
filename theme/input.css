@@ -345,40 +345,22 @@
    * Se a malha é o papel, o campo é o que está desenhado nele. Vive nas
    * mesmas três seções que a `.malha-tecnica` marca como as que respiram.
    *
-   * O invólucro cobre a seção toda, e a seção de projetos fica GIGANTE
-   * quando o ScrollTrigger prende a esteira e injeta o espaçador. Um canvas
-   * `absolute inset-0` ali dentro seria um buffer de vários milhares de
-   * pixels de altura — dezenas de MB para pintar um desenho que só se vê
-   * uma janela por vez. Por isso o canvas é `fixed` (ver a regra abaixo):
+   * O `sticky` no canvas é o ponto inteiro desta regra. O invólucro cobre a
+   * seção toda, e a seção de projetos fica GIGANTE quando o ScrollTrigger
+   * prende a esteira e injeta o espaçador. Um canvas `inset-0` ali dentro
+   * seria um buffer de vários milhares de pixels de altura — dezenas de MB
+   * para pintar um desenho que só se vê uma janela por vez. Preso ao topo,
    * ele tem sempre a altura da tela, custe o que custar à seção.
    *
    * Consequência que precisa ficar escrita: o `overflow-hidden` que recorta
-   * o campo vai na <section>, NUNCA neste invólucro. É ele que limita o
-   * canvas `fixed` às bordas da seção — sem ele, o desenho de uma seção
-   * vazaria por cima das vizinhas. */
+   * o campo vai na <section>, NUNCA neste invólucro. Overflow entre o
+   * elemento preso e o contêiner de rolagem desliga o `sticky`. */
   .campo {
     @apply pointer-events-none absolute inset-0 z-0;
   }
 
-  /* `fixed`, e NÃO `sticky`. A diferença deixou duas faixas mortas.
-   *
-   * O `sticky` só gruda DENTRO dos limites do pai. Com o pin da esteira
-   * injetando um espaçador, a seção de projetos fica muito mais alta que a
-   * janela — e nas pontas dela o canvas de `100svh` simplesmente não
-   * alcançava: uma faixa no topo e outra embaixo ficavam sem canvas nenhum,
-   * mostrando só a `.malha-tecnica` do fundo e sem reagir ao cursor, porque
-   * ali não havia treliça para reagir.
-   *
-   * O `fixed` resolve os dois lados de uma vez: o canvas passa a cobrir a
-   * janela inteira o tempo todo, e o `overflow-hidden` da <section> o
-   * recorta nos limites dela — que é o mesmo recorte de antes. A altura
-   * continua sendo a da tela, então o buffer não cresce com a seção, que
-   * era o motivo original de existir o sticky.
-   *
-   * O `inset-0` sobrescreve o `absolute inset-0` do invólucro no eixo certo:
-   * como o canvas é `fixed`, ele se ancora na JANELA, não no `.campo`. */
   .campo > canvas {
-    @apply fixed inset-0 block h-[100svh] w-full;
+    @apply sticky top-0 block h-[100svh] w-full;
   }
 
   /* =====================================================================
