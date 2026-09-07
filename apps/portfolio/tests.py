@@ -484,6 +484,27 @@ class BackendDoResendTests(SimpleTestCase):
         self.assertEqual(corpo['reply_to'], ['visitante@exemplo.com'])
 
     @override_settings(
+        EMAIL_BACKEND='apps.core.email.ResendBackend',
+        RESEND_API_KEY='re_chave_de_teste',
+        DEFAULT_FROM_EMAIL='Portfolio <onboarding@resend.dev>',
+    )
+    def test_manda_user_agent_proprio(self):
+        """
+        Sem User-Agent, o urllib se anuncia como `Python-urllib/3.x` e o
+        Cloudflare que protege a API do Resend recusa com "error code: 1010" —
+        um 403 sem JSON, que parece erro de chave e nao e.
+
+        Foi o defeito que segurou o envio em producao. O teste existe para o
+        cabecalho nao ser removido por parecer decorativo.
+        """
+        requisicao = self._enviar()
+
+        agente = requisicao.headers.get('User-agent', '')
+        self.assertTrue(agente)
+        self.assertNotIn('urllib', agente.lower())
+        self.assertNotIn('python', agente.lower())
+
+    @override_settings(
         EMAIL_BACKEND='apps.core.email.ResendBackend', RESEND_API_KEY=''
     )
     def test_sem_chave_levanta_em_vez_de_fingir_que_enviou(self):

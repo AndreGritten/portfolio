@@ -98,6 +98,16 @@ class ResendBackend(BaseEmailBackend):
             headers={
                 'Authorization': f'Bearer {self.chave}',
                 'Content-Type': 'application/json',
+                # O User-Agent NÃO é enfeite: sem ele o urllib se anuncia como
+                # `Python-urllib/3.x`, e o Cloudflare que protege a API do
+                # Resend recusa a requisição com "error code: 1010" — uma
+                # regra anti-robô que nem chega a olhar a chave.
+                #
+                # O sintoma engana: vem um 403 sem JSON nenhum, então parece
+                # problema de permissão ou de chave inválida. Reproduzido com
+                # curl: o MESMO pedido passa com um User-Agent qualquer e é
+                # bloqueado com o do Python.
+                'User-Agent': 'portfolio-andre-gritten/1.0',
             },
             method='POST',
         )
