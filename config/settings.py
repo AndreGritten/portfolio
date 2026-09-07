@@ -350,6 +350,20 @@ MESSAGE_TAGS = {
 # Em desenvolvimento a mensagem sai no terminal; nenhum SMTP é necessário.
 # Em qualquer configuração ela também é gravada em MensagemContato, então uma
 # falha de SMTP nunca perde um contato — ver apps/portfolio/views.py.
+#
+# ATENÇÃO AO RENDER: o plano gratuito BLOQUEIA conexões SMTP de saída (portas
+# 25, 465 e 587). Não é problema de credencial nem de configuração — as mesmas
+# variáveis que funcionam na máquina local falham lá, com timeout. É por isso
+# que o formulário responde "a mensagem foi registrada, mas o e-mail não saiu":
+# o contato está salvo no banco e visível no admin, só o aviso não chega.
+#
+# As saídas, em ordem de esforço:
+#   1. usar uma API HTTP em vez de SMTP — Resend, SendGrid ou Mailgun têm nível
+#      gratuito e falam HTTPS, que o Render não bloqueia. Exige trocar o
+#      EMAIL_BACKEND por um do pacote correspondente;
+#   2. subir para um plano pago do Render, que libera SMTP;
+#   3. não fazer nada e ler as mensagens pelo admin, que é o comportamento
+#      atual — aceitável enquanto o volume for baixo.
 EMAIL_BACKEND = config(
     'EMAIL_BACKEND',
     default='django.core.mail.backends.console.EmailBackend',
