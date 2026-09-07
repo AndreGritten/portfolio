@@ -351,19 +351,23 @@ MESSAGE_TAGS = {
 # Em qualquer configuração ela também é gravada em MensagemContato, então uma
 # falha de SMTP nunca perde um contato — ver apps/portfolio/views.py.
 #
-# ATENÇÃO AO RENDER: o plano gratuito BLOQUEIA conexões SMTP de saída (portas
-# 25, 465 e 587). Não é problema de credencial nem de configuração — as mesmas
-# variáveis que funcionam na máquina local falham lá, com timeout. É por isso
-# que o formulário responde "a mensagem foi registrada, mas o e-mail não saiu":
-# o contato está salvo no banco e visível no admin, só o aviso não chega.
+# EM PRODUÇÃO O ENVIO É POR API HTTP, e não por SMTP. O plano gratuito do
+# Render bloqueia conexões de saída nas portas 25, 465 e 587 — as mesmas
+# credenciais do Gmail que entregam da máquina local dão timeout lá. Não é
+# credencial, é a rede. HTTPS não é bloqueado, então a API resolve.
 #
-# As saídas, em ordem de esforço:
-#   1. usar uma API HTTP em vez de SMTP — Resend, SendGrid ou Mailgun têm nível
-#      gratuito e falam HTTPS, que o Render não bloqueia. Exige trocar o
-#      EMAIL_BACKEND por um do pacote correspondente;
-#   2. subir para um plano pago do Render, que libera SMTP;
-#   3. não fazer nada e ler as mensagens pelo admin, que é o comportamento
-#      atual — aceitável enquanto o volume for baixo.
+# Quem faz isso é `apps.core.email.ResendBackend`, escolhido porque o Resend
+# entrega por `onboarding@resend.dev` sem exigir domínio verificado — os
+# concorrentes exigem, e este portfólio não tem domínio próprio.
+#
+# Para ligar, no painel do Render (Environment):
+#   EMAIL_BACKEND  = apps.core.email.ResendBackend
+#   RESEND_API_KEY = re_xxxxxxxx   (criada em resend.com/api-keys)
+#   DEFAULT_FROM_EMAIL = Portfólio André Gritten <onboarding@resend.dev>
+#
+# Sem a chave o backend levanta erro em vez de fingir que enviou — e a view do
+# contato trata isso: a mensagem já está gravada, então nada se perde e o
+# visitante é avisado de que só o aviso falhou.
 EMAIL_BACKEND = config(
     'EMAIL_BACKEND',
     default='django.core.mail.backends.console.EmailBackend',
@@ -374,6 +378,10 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_TIMEOUT = 10  # segundos: um SMTP mudo não pode travar a requisição
+
+# A chave da API do Resend. Só é lida pelo ResendBackend; com qualquer outro
+# backend ela fica inerte, e é por isso que pode ficar vazia sem quebrar nada.
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
 
 DEFAULT_FROM_EMAIL = config(
     'DEFAULT_FROM_EMAIL',

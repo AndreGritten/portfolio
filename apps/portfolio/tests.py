@@ -6,6 +6,7 @@ mostrando projeto despublicado, e o comando de semente duplicando registros.
 O resto da página é HTML — quebra alto e na cara de quem olha.
 """
 
+import io
 from datetime import date
 from unittest import mock
 
@@ -429,3 +430,100 @@ class ConfiguracaoTests(SimpleTestCase):
         import config.settings
 
         importlib.reload(config.settings)
+
+
+class BackendDoResendTests(SimpleTestCase):
+    """
+    O envio em produção não é SMTP: o plano gratuito do Render bloqueia as
+    portas de saída, então o aviso do formulário vai pela API HTTP do Resend.
+
+    Estes testes não tocam a rede — o que se verifica é o CONTRATO com a API:
+    o formato do corpo, o cabeçalho de autenticação e o comportamento quando
+    algo falha. Um erro aqui só apareceria em produção, no dia em que alguém
+    escrevesse pelo formulário.
+    """
+
+    def _enviar(self, **kwargs):
+        """Envia uma mensagem com a rede mockada e devolve a requisição montada."""
+        from django.core.mail import EmailMessage
+
+        with mock.patch('urllib.request.urlopen') as urlopen:
+            urlopen.return_value.__enter__.return_value.read.return_value = b'{"id":"1"}'
+            EmailMessage(
+                subject='[Portfólio] Assunto',
+                body='O corpo da mensagem.',
+                to=['destino@exemplo.com'],
+                reply_to=['visitante@exemplo.com'],
+                **kwargs,
+            ).send(fail_silently=False)
+            return urlopen.call_args[0][0]
+
+    @override_settings(
+        EMAIL_BACKEND='apps.core.email.ResendBackend',
+        RESEND_API_KEY='re_chave_de_teste',
+        DEFAULT_FROM_EMAIL='Portfólio <onboarding@resend.dev>',
+    )
+    def test_monta_a_requisicao_no_formato_da_api(self):
+        import json
+
+        requisicao = self._enviar()
+
+        self.assertEqual(requisicao.full_url, 'https://api.resend.com/emails')
+        self.assertEqual(requisicao.method, 'POST')
+        self.assertEqual(
+            requisicao.headers.get('Authorization'), 'Bearer re_chave_de_teste'
+        )
+
+        corpo = json.loads(requisicao.data.decode('utf-8'))
+        self.assertEqual(corpo['to'], ['destino@exemplo.com'])
+        self.assertEqual(corpo['subject'], '[Portfólio] Assunto')
+        self.assertEqual(corpo['text'], 'O corpo da mensagem.')
+        # O `reply_to` é o que faz "Responder" ir para quem escreveu, e não
+        # para o remetente técnico. Sem ele o formulário vira uma via de mão
+        # única sem ninguém perceber.
+        self.assertEqual(corpo['reply_to'], ['visitante@exemplo.com'])
+
+    @override_settings(
+        EMAIL_BACKEND='apps.core.email.ResendBackend', RESEND_API_KEY=''
+    )
+    def test_sem_chave_levanta_em_vez_de_fingir_que_enviou(self):
+        """
+        Um backend que devolve sucesso sem enviar é pior que um que falha: a
+        view marcaria `email_enviado = True` e ninguém saberia que o aviso não
+        chegou.
+        """
+        from django.core.mail import EmailMessage
+
+        with self.assertRaises(ValueError):
+            EmailMessage(subject='x', body='y', to=['a@b.com']).send(
+                fail_silently=False
+            )
+
+    @override_settings(
+        EMAIL_BACKEND='apps.core.email.ResendBackend', RESEND_API_KEY='re_x'
+    )
+    def test_erro_da_api_carrega_o_motivo(self):
+        """
+        O corpo da resposta é onde o Resend explica o que recusou. Sem ele o
+        log ficaria com um código mudo, e a causa exigiria reproduzir a falha.
+        """
+        import urllib.error
+
+        from django.core.mail import EmailMessage
+
+        falha = urllib.error.HTTPError(
+            url='https://api.resend.com/emails',
+            code=422,
+            msg='Unprocessable',
+            hdrs=None,
+            fp=io.BytesIO(b'{"message":"domain is not verified"}'),
+        )
+
+        with mock.patch('urllib.request.urlopen', side_effect=falha):
+            with self.assertRaises(RuntimeError) as contexto:
+                EmailMessage(subject='x', body='y', to=['a@b.com']).send(
+                    fail_silently=False
+                )
+
+        self.assertIn('422', str(contexto.exception))
+        self.assertIn('domain is not verified', str(contexto.exception))
