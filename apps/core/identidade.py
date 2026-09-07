@@ -33,7 +33,7 @@ PESSOA = {
 }
 
 CONTATO = {
-    'email': 'dedegritten@gmail.com',
+    'email': 'dehgritten@gmail.com',
     'telefone': '(41) 99899-0487',
     # Sem espaço nem pontuação, com o código do país: é o formato que o
     # `href="tel:"` exige para o celular discar sem editar o número.

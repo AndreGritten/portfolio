@@ -389,7 +389,7 @@ DEFAULT_FROM_EMAIL = config(
 )
 
 # Para onde vai o que o formulário de contato recebe.
-EMAIL_DESTINO = config('EMAIL_DESTINO', default='dedegritten@gmail.com')
+EMAIL_DESTINO = config('EMAIL_DESTINO', default='dehgritten@gmail.com')
 
 
 # ---------------------------------------------------------------------------
