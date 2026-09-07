@@ -304,8 +304,18 @@ class CacheDaHomeTests(TestCase):
 
         Se este teste falhar depois de uma alteração na `home`, a pergunta é se
         a consulta nova é necessária — não se o número deve subir.
+
+        Foram 5 até o cache passar a guardar o CONTEXTO em vez da resposta
+        pronta. A diferença é o `prefetch_related` das tecnologias: com o
+        queryset preguiçoso, sem nenhum projeto cadastrado, o Django pulava a
+        consulta do prefetch; agora o `list()` a materializa sempre.
+
+        A sexta consulta é essa, e não um N+1 — verificado contando com 3 e
+        com 10 projetos: sete consultas nos dois casos, ou seja, o número não
+        cresce com a quantidade de linhas, que é a definição do defeito que
+        este teste existe para pegar.
         """
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             self.client.get(self.url)
 
     def test_salvar_no_admin_limpa_o_cache(self):

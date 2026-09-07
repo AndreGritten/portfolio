@@ -10,7 +10,7 @@ from django.core.mail import EmailMessage
 from django.http import FileResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 from django.views.decorators.http import require_POST
 
 from .forms import ContatoForm
@@ -27,23 +27,49 @@ NOME_ARQUIVO_CURRICULO = 'curriculo-andre-gritten.pdf'
 TEMPO_DE_CACHE_DA_HOME = 60 * 15
 
 
-@cache_page(TEMPO_DE_CACHE_DA_HOME)
+# O `cache_page` SAIU DAQUI, e não pode voltar. Ele fazia duas coisas, e só
+# uma era desejada: guardava a resposta no servidor (bom, é o objetivo) e
+# mandava `Cache-Control: max-age=900` para o navegador (ruim), o que fazia
+# cada visitante guardar a PÁGINA PRONTA por quinze minutos na máquina dele.
+#
+# Isso causou dois defeitos reais.
+#
+# Um projeto cujo link do GitHub foi apagado no admin continuava com o botão
+# antigo funcionando: o banco e o cache do servidor já estavam corretos — os
+# signals limpam na hora —, mas o navegador servia a cópia local, e o clique
+# levava a um repositório que não devia mais estar ali.
+#
+# O segundo é pior: o formulário de contato passou a responder 403 CSRF. A
+# página vinha do cache do navegador com um token velho, e o servidor recusa
+# token que não bate com a sessão. Um formulário que não envia é um defeito
+# calado — ninguém reclama, a mensagem só não chega.
+#
+# Reescrever o cabeçalho com `patch_cache_control` não resolve: o middleware
+# do `cache_page` LÊ o próprio cabeçalho e se recusa a guardar uma resposta
+# marcada como `no-store`. Foi medido — voltavam as sete consultas por visita.
+#
+# O cache agora é do CONTEXTO (`_dados_da_home`), não da resposta. As
+# consultas continuam sendo pagas uma vez a cada quinze minutos, e o HTML é
+# renderizado a cada visita, com um token CSRF novo. O custo de renderizar um
+# template já com os dados em memória é irrelevante perto de uma ida ao banco.
 def home(request):
     """
     A página inteira.
 
-    CACHEADA, e a razão está na medição: a home faz sete consultas, e contra o
-    Supabase em `ca-central-1` cada ida custa ~155ms — `SELECT 1`, a consulta
-    mais barata que existe, custa o mesmo. O tempo não está no banco, está na
-    distância. Somando, eram ~1,1s de rede para montar uma página que só muda
-    quando alguém edita o admin.
+    Os DADOS são cacheados, e a razão está na medição: a home faz sete
+    consultas, e contra o Supabase em `ca-central-1` cada ida custa ~155ms —
+    `SELECT 1`, a consulta mais barata que existe, custa o mesmo. O tempo não
+    está no banco, está na distância. Somando, eram ~1,1s de rede para montar
+    uma página que só muda quando alguém edita o admin.
 
-    `cache_page` guarda a resposta pronta: a primeira visita paga as consultas,
-    as seguintes saem da memória. O TTFB medido em produção era ~950ms.
+    Quem guarda é o `_dados_da_home`: a primeira visita paga as consultas, as
+    seguintes saem da memória. O template é renderizado sempre, e é isso que
+    mantém o token CSRF do formulário de contato válido — ver o comentário
+    acima desta função.
 
     O cache é de PROCESSO (LocMemCache), então cada worker do Gunicorn tem o
     seu. Com um worker, como no plano gratuito do Render, isso é indiferente;
-    com vários, o pior caso é cada um montar a página uma vez — todos com o
+    com vários, o pior caso é cada um consultar o banco uma vez — todos com o
     mesmo conteúdo, porque a página não depende de quem pede.
 
     Quem edita o admin não espera o TTL: `apps/portfolio/signals.py` limpa o
@@ -143,8 +169,48 @@ def _contexto_da_home(form=None):
     `form` vem preenchido quando o contato voltou com erro; nos demais casos
     nasce vazio.
     """
-    # As tecnologias do FILTRO são só as que algum projeto publicado usa. Uma
-    # pílula que não filtra nada é uma promessa que a página não cumpre.
+    # Tudo que vem do banco sai de `_dados_da_home`, que é a parte cacheada.
+    # As tecnologias do FILTRO, por exemplo, são só as que algum projeto
+    # publicado usa — uma pílula que não filtra nada é uma promessa que a
+    # página não cumpre.
+    #
+    # O que fica FORA do cache é o formulário, logo abaixo: ele carrega o
+    # token CSRF, que é por sessão e não pode ser compartilhado entre
+    # visitantes.
+    return {
+        **_dados_da_home(),
+        # `total_certificados` não existe: seria um COUNT numa tabela que a
+        # consulta acima já traz inteira. O template usa
+        # `{{ certificados|length }}`, que conta a lista já carregada.
+        'form_contato': form if form is not None else ContatoForm(),
+        # O template usa isto para abrir a seção de contato já rolada, com o
+        # foco no primeiro campo com erro.
+        'contato_com_erro': form is not None,
+    }
+
+
+# A chave do contexto cacheado. Uma só: a home não varia por visitante.
+CHAVE_CACHE_HOME = 'home:contexto'
+
+
+def _dados_da_home():
+    """
+    A parte CACHEÁVEL do contexto: só o que vem do banco.
+
+    Existe separada de `_contexto_da_home` porque o formulário de contato NÃO
+    pode ser cacheado — ele carrega o token CSRF, que é por sessão. Guardar o
+    formulário junto era o que fazia a página voltar do cache com um token
+    velho, e o servidor recusa token que não bate: o contato respondia 403.
+
+    Os querysets são materializados em `list()` antes de guardar. Um queryset
+    é preguiçoso — guardá-lo no cache guardaria a PROMESSA da consulta, não o
+    resultado, e cada leitura do cache iria ao banco de novo, que é o oposto
+    do objetivo.
+    """
+    dados = cache.get(CHAVE_CACHE_HOME)
+    if dados is not None:
+        return dados
+
     tecnologias_em_uso = (
         Tecnologia.objects
         .filter(projetos__publicado=True)
@@ -152,33 +218,21 @@ def _contexto_da_home(form=None):
         .order_by('nome')
     )
 
-    return {
-        'projetos': (
+    dados = {
+        'projetos': list(
             Projeto.objects
             .filter(publicado=True)
             .prefetch_related('tecnologias')
         ),
-        'tecnologias_filtro': tecnologias_em_uso,
-        # Para a seção "Habilidades": todas, agrupadas por categoria no
-        # template com `{% regroup %}`. `na_ordem_do_quadro` é o que o regroup
-        # exige — ele agrupa vizinhos, então a lista precisa chegar ordenada
-        # pela chave do agrupamento, e nesta ordem e não na alfabética.
-        # `list()` e não o queryset cru, por causa do `|slice:":6"` que o hero
-        # aplica: fatiar um queryset no template não reaproveita o resultado —
-        # o Django emite uma SEGUNDA consulta com `LIMIT 6`, e a mesma tabela
-        # era lida duas vezes por página. Numa lista já materializada o slice é
-        # só Python.
+        'tecnologias_filtro': list(tecnologias_em_uso),
         'tecnologias': list(Tecnologia.objects.na_ordem_do_quadro()),
-        'certificados': Certificado.objects.all(),
-        'experiencias': Experiencia.objects.filter(
-            tipo=Experiencia.Tipo.EXPERIENCIA
+        'certificados': list(Certificado.objects.all()),
+        'experiencias': list(
+            Experiencia.objects.filter(tipo=Experiencia.Tipo.EXPERIENCIA)
         ),
-        'formacoes': Experiencia.objects.filter(tipo=Experiencia.Tipo.EDUCACAO),
-        # `total_certificados` saiu daqui: era um COUNT numa tabela que a linha
-        # acima já traz inteira. O template usa `{{ certificados|length }}`,
-        # que conta a lista já carregada — uma ida a menos ao banco.
-        'form_contato': form if form is not None else ContatoForm(),
-        # O template usa isto para abrir a seção de contato já rolada, com o
-        # foco no primeiro campo com erro.
-        'contato_com_erro': form is not None,
+        'formacoes': list(
+            Experiencia.objects.filter(tipo=Experiencia.Tipo.EDUCACAO)
+        ),
     }
+    cache.set(CHAVE_CACHE_HOME, dados, TEMPO_DE_CACHE_DA_HOME)
+    return dados

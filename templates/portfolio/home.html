@@ -361,17 +361,24 @@
                           class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
                     Detalhes
                   </button>
-                  {% if cert.link_credencial %}
-                    <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener"
-                       class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
-                      {% icone "ExternalLink" size=13 aria_hidden="true" %}
-                      Verificar
-                    </a>
-                  {% elif cert.arquivo_pdf %}
+                  {% comment %}
+                    O PDF vem PRIMEIRO, e o link de verificação é a
+                    alternativa. O certificado em si é o que a pessoa quer
+                    ver; a página de verificação da instituição é um passo a
+                    mais, muitas vezes atrás de login, e nem sempre mostra o
+                    documento.
+                  {% endcomment %}
+                  {% if cert.arquivo_pdf %}
                     <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener"
                        class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
                       {% icone "FileText" size=13 aria_hidden="true" %}
                       Abrir PDF
+                    </a>
+                  {% elif cert.link_credencial %}
+                    <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener"
+                       class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                      {% icone "ExternalLink" size=13 aria_hidden="true" %}
+                      Verificar
                     </a>
                   {% endif %}
                 </div>
@@ -450,16 +457,23 @@
                     </dl>
 
                     <div class="flex flex-wrap gap-2">
-                      {% if cert.link_credencial %}
-                        <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener" class="btn-osso !text-xs">
-                          {% icone "ExternalLink" size=14 aria_hidden="true" %}
-                          Verificar credencial
-                        </a>
-                      {% endif %}
+                      {% comment %}
+                        Aqui os dois convivem, mas a HIERARQUIA inverteu: o
+                        PDF fica no botão principal (`.btn-osso`, a coisa mais
+                        clara da tela) e a verificação vira secundária. É o
+                        documento que a pessoa abriu o diálogo para ver.
+                      {% endcomment %}
                       {% if cert.arquivo_pdf %}
-                        <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener" class="btn-linha !text-xs">
+                        <a href="{{ cert.arquivo_pdf.url }}" target="_blank" rel="noopener" class="btn-osso !text-xs">
                           {% icone "FileText" size=14 aria_hidden="true" %}
                           Abrir PDF
+                        </a>
+                      {% endif %}
+                      {% if cert.link_credencial %}
+                        <a href="{{ cert.link_credencial }}" target="_blank" rel="noopener"
+                           class="{% if cert.arquivo_pdf %}btn-linha{% else %}btn-osso{% endif %} !text-xs">
+                          {% icone "ExternalLink" size=14 aria_hidden="true" %}
+                          Verificar credencial
                         </a>
                       {% endif %}
                       {% if not cert.tem_verificacao %}
