@@ -121,10 +121,10 @@ class ContatoTests(TestCase):
 class HomeTests(TestCase):
     def setUp(self):
         self.python = Tecnologia.objects.create(
-            nome='Python', categoria=Tecnologia.Categoria.BACKEND
+            nome='Python', categoria=Tecnologia.Categoria.STACK
         )
         self.sql = Tecnologia.objects.create(
-            nome='SQL', categoria=Tecnologia.Categoria.DATABASE
+            nome='SQL', categoria=Tecnologia.Categoria.STACK
         )
 
         self.publicado = Projeto.objects.create(
@@ -150,15 +150,15 @@ class HomeTests(TestCase):
 
     def test_habilidades_saem_na_ordem_do_quadro(self):
         """
-        Frontend vem ANTES de Engenharia e de Ferramentas.
+        Stack vem ANTES de Ferramentas e de Competências.
 
-        Pela ordenação alfabética do valor gravado ele sairia por último, e o
-        `regroup` do template o deixava sozinho numa linha extra. A ordem é
-        uma decisão de leitura, não um acaso do banco.
+        Pela ordenação alfabética do valor gravado a ordem sairia
+        "competencias, ferramentas, stack" — a ordem de leitura correta é
+        uma decisão de apresentação, não um acaso do banco.
         """
-        Tecnologia.objects.create(nome='UML', categoria=Tecnologia.Categoria.ENGENHARIA)
+        Tecnologia.objects.create(nome='UML', categoria=Tecnologia.Categoria.COMPETENCIAS)
         Tecnologia.objects.create(nome='Git', categoria=Tecnologia.Categoria.FERRAMENTAS)
-        Tecnologia.objects.create(nome='HTML', categoria=Tecnologia.Categoria.FRONTEND)
+        Tecnologia.objects.create(nome='HTML', categoria=Tecnologia.Categoria.STACK)
 
         resposta = self.client.get(reverse('portfolio:home'))
         categorias = []
@@ -168,7 +168,7 @@ class HomeTests(TestCase):
 
         self.assertEqual(
             categorias,
-            ['backend', 'database', 'frontend', 'ferramentas', 'engenharia'],
+            ['stack', 'ferramentas', 'competencias'],
         )
 
     def test_pagina_abre_sem_nenhum_dado(self):
@@ -333,7 +333,7 @@ class CacheDaHomeTests(TestCase):
         self.client.get(self.url)
 
         projeto.tecnologias.add(
-            Tecnologia.objects.create(nome='Rust', categoria=Tecnologia.Categoria.BACKEND)
+            Tecnologia.objects.create(nome='Rust', categoria=Tecnologia.Categoria.STACK)
         )
 
         resposta = self.client.get(self.url)

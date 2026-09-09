@@ -59,90 +59,47 @@ class TecnologiaQuerySet(models.QuerySet):
         Ordena pelas categorias na ordem em que a seção de habilidades as lê.
 
         Existe porque o `ordering` do modelo classifica pelo VALOR gravado, e
-        esse valor é alfabético: backend, database, engenharia, ferramentas,
-        frontend. O quadro saía com Frontend depois de Ferramentas — fora da
-        sequência que a pessoa espera (o que roda no servidor, os dados, o que
-        aparece na tela, o método, as ferramentas) e, com cinco colunas numa
-        grade de quatro, sozinho numa segunda linha.
+        esse valor é alfabético: competencias, ferramentas, stack — fora da
+        sequência que a pessoa espera (o que roda de fato, o que cerca o
+        trabalho, o raciocínio por trás).
 
         Um `Case` resolve sem tocar no que está gravado. A alternativa seria
-        renomear os valores para 'a-backend', 'b-database'… — uma migração e
+        renomear os valores para 'a-stack', 'b-ferramentas'… — uma migração e
         um dado feio para sempre, só para agradar a um ORDER BY.
-
-        O peso do GRUPO vem primeiro, e o da categoria depois: o template
-        agrupa a exibição em três colunas (Stack/Ferramentas/Habilidades) com
-        `{% regroup %}`, que exige que os itens do mesmo grupo cheguem
-        VIZINHOS — sem o peso de grupo na frente, Backend e Frontend (os
-        dois em "Stack") ficariam intercalados com Ferramentas no meio, e o
-        regroup criaria uma segunda entrada de "Stack" mais adiante em vez
-        de uma coluna só.
         """
-        pesos_categoria = [
+        pesos = [
             When(categoria=valor, then=Value(indice))
             for indice, valor in enumerate(self.model.ORDEM_DO_QUADRO)
         ]
         return self.alias(
-            peso_grupo=Case(
-                *[
-                    When(categoria=cat, then=Value(self.model.ORDEM_DO_GRUPO.index(grupo)))
-                    for cat, grupo in self.model.GRUPO_DO_QUADRO.items()
-                ],
-                default=Value(99),
-                output_field=IntegerField(),
-            ),
-            peso=Case(*pesos_categoria, default=Value(99), output_field=IntegerField()),
-        ).order_by('peso_grupo', 'peso', 'ordem', 'nome')
+            peso=Case(*pesos, default=Value(99), output_field=IntegerField()),
+        ).order_by('peso', 'ordem', 'nome')
 
 
 class Tecnologia(models.Model):
     """Uma tag técnica. Alimenta o filtro de projetos e o quadro de habilidades."""
 
     class Categoria(models.TextChoices):
-        BACKEND = 'backend', 'Backend'
-        DATABASE = 'database', 'Banco de dados'
-        FRONTEND = 'frontend', 'Frontend'
-        ENGENHARIA = 'engenharia', 'Engenharia e metodologias'
+        # O que roda de fato: linguagens, frameworks, bancos de dados — a
+        # pilha que compõe o sistema em produção.
+        STACK = 'stack', 'Stack'
+        # O que cerca o trabalho com a stack sem ser a stack em si: editor,
+        # controle de versão, containerização.
         FERRAMENTAS = 'ferramentas', 'Ferramentas'
+        # Paradigma, técnica, processo, método — o raciocínio por trás do
+        # código, não uma tecnologia que se instala. "Competências" e não
+        # "Habilidades" para não repetir o nome da seção inteira
+        # (`id="habilidades"` no template).
+        COMPETENCIAS = 'competencias', 'Competências'
 
     # A ordem das colunas na seção de habilidades. Uma categoria nova que não
     # entre nesta lista cai no fim, o que é o comportamento certo: aparece,
     # sem se meter no meio de uma sequência pensada.
     ORDEM_DO_QUADRO = [
-        Categoria.BACKEND,
-        Categoria.DATABASE,
-        Categoria.FRONTEND,
-        Categoria.ENGENHARIA,
+        Categoria.STACK,
         Categoria.FERRAMENTAS,
+        Categoria.COMPETENCIAS,
     ]
-
-    # O agrupamento VISUAL da seção de habilidades — três colunas, não cinco.
-    #
-    # "Stack" junta backend, frontend e banco de dados: são as tecnologias
-    # que compõem o que roda de fato (a pilha). "Ferramentas" continua
-    # separada, porque git/docker/etc. não são a stack em si, são o que
-    # cerca o trabalho com ela. "Engenharia e metodologias" (UML, análise de
-    # requisitos) passa a se chamar "Habilidades" no quadro, porque descreve
-    # melhor o que essas tags realmente são: não uma tecnologia que se
-    # instala, e sim uma competência.
-    #
-    # Existe como mapeamento à parte, e não como mudança no campo `categoria`
-    # em si: a granularidade de Backend/Frontend/Banco de dados continua
-    # valendo para quem edita no admin (a pessoa que cadastra sabe exatamente
-    # onde uma tecnologia nova se encaixa), e a apresentação em três colunas
-    # é só uma forma de agrupar essas cinco categorias na hora de exibir —
-    # trocar a vitrine sem reescrever o estoque.
-    GRUPO_DO_QUADRO = {
-        Categoria.BACKEND: 'Stack',
-        Categoria.FRONTEND: 'Stack',
-        Categoria.DATABASE: 'Stack',
-        Categoria.FERRAMENTAS: 'Ferramentas',
-        Categoria.ENGENHARIA: 'Habilidades',
-    }
-
-    # A ordem dos TRÊS grupos visuais — não confundir com ORDEM_DO_QUADRO,
-    # que ordena as cinco categorias originais e alimenta o filtro de
-    # projetos, onde a granularidade de verdade ainda importa.
-    ORDEM_DO_GRUPO = ['Stack', 'Ferramentas', 'Habilidades']
 
     objects = TecnologiaQuerySet.as_manager()
 
@@ -159,7 +116,7 @@ class Tecnologia(models.Model):
         'categoria',
         max_length=20,
         choices=Categoria.choices,
-        default=Categoria.BACKEND,
+        default=Categoria.STACK,
         help_text='Define em qual coluna da seção "Habilidades" a tag aparece.',
     )
     ordem = models.PositiveIntegerField(
@@ -175,11 +132,6 @@ class Tecnologia(models.Model):
 
     def __str__(self):
         return self.nome
-
-    @property
-    def grupo_do_quadro(self):
-        """A coluna visual em que esta tag aparece — ver GRUPO_DO_QUADRO."""
-        return self.GRUPO_DO_QUADRO.get(self.categoria, 'Habilidades')
 
     def save(self, *args, **kwargs):
         if not self.slug:

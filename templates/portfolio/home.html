@@ -738,7 +738,7 @@
 
       <p data-brilho class="rotulo revelar mb-3">Habilidades</p>
       <h2 data-brilho class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
-        Stack, ferramentas e habilidades
+        Stack, ferramentas e competências
       </h2>
 
       {% if tecnologias %}
@@ -746,18 +746,13 @@
           `regroup` agrupa VIZINHOS, então a lista precisa chegar ordenada
           pela chave — quem garante isso é `na_ordem_do_quadro()`, no model.
 
-          Agrupar por `grupo_do_quadro`, e não por `get_categoria_display`:
-          são CINCO categorias no banco (Backend, Banco de dados, Frontend,
-          Engenharia e metodologias, Ferramentas), mas só TRÊS colunas na
-          tela. Backend, Frontend e Banco de dados viram "Stack" — são a
-          pilha que roda de fato —, "Engenharia e metodologias" vira
-          "Habilidades" — descreve melhor o que são: competência, não uma
-          tecnologia que se instala —, e "Ferramentas" continua sozinha. A
-          granularidade de cinco categorias segue existindo no admin, para
-          quem cadastra saber exatamente onde uma tecnologia nova entra; o
-          agrupamento em três é só a apresentação.
+          Agrupar por `get_categoria_display`, direto: a categoria JÁ É a
+          coluna (Stack/Ferramentas/Competências) — não há mais um
+          mapeamento de cinco categorias técnicas para três grupos visuais,
+          como havia antes. Quem cadastra no admin escolhe a coluna
+          diretamente.
         {% endcomment %}
-        {% regroup tecnologias by grupo_do_quadro as grupos %}
+        {% regroup tecnologias by get_categoria_display as grupos %}
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
           {% for grupo in grupos %}
             <div class="revelar">

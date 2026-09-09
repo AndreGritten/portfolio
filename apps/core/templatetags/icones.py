@@ -3,8 +3,9 @@
 
 Os desenhos lucide ficam em `apps/core/icones.json`, extraído do pacote
 `lucide-static` por `theme/extrair-icones.js`. Os logos de marca (Python,
-Django, PostgreSQL...) ficam em `apps/core/icones_marca.json`, extraído do
-pacote `simple-icons` por `theme/extrair-icones-marca.js`. Os dois JSONs são
+Django, PostgreSQL...) ficam em `apps/core/icones_marca.json`, extraído
+principalmente do pacote `simple-icons` (e, onde falta — hoje só Java —, do
+`devicon`) por `theme/extrair-icones-marca.js`. Os dois JSONs são
 versionados, então renderizar um ícone não depende de Node nem de rede — só
 de acrescentar o nome à lista do script correspondente quando um ícone novo
 for usado.
@@ -47,11 +48,14 @@ GABARITO = (
     ' class="{classe}"{extras}>{interno}</svg>'
 )
 
-# Simple Icons publica um <path> só, num viewBox de 24x24 já normalizado —
-# não há stroke-width nem linecap a configurar, é uma silhueta preenchida.
+# Simple Icons publica um <path> só, num viewBox 24x24 já normalizado — não
+# há stroke-width nem linecap a configurar, é uma silhueta preenchida. Um
+# ícone vindo de outra fonte (ex. devicon, para Java) pode ter viewBox
+# diferente (128x128), então o gabarito lê o valor do catálogo em vez de
+# fixar 24x24 — sem isso, o desenho de outra fonte apareceria cortado.
 GABARITO_MARCA = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="{tamanho}" height="{tamanho}"'
-    ' viewBox="0 0 24 24" fill="currentColor"'
+    ' viewBox="{viewbox}" fill="currentColor"'
     ' class="{classe}"{extras}><path d="{caminho}"/></svg>'
 )
 
@@ -155,6 +159,7 @@ def icone_marca(slug, size=24, **kwargs):
     return mark_safe(
         GABARITO_MARCA.format(
             tamanho=conditional_escape(size),
+            viewbox=conditional_escape(desenho.get('viewBox', '0 0 24 24')),
             classe=conditional_escape(classe),
             extras=extras,
             caminho=conditional_escape(desenho['path']),

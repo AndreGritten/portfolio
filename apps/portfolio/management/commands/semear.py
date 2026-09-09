@@ -27,24 +27,33 @@ from apps.portfolio.models import Certificado, Experiencia, Tecnologia
 
 TECNOLOGIAS = [
     # (nome, categoria, ordem)
-    ('Python', Tecnologia.Categoria.BACKEND, 1),
-    ('Django', Tecnologia.Categoria.BACKEND, 2),
-    ('Laravel', Tecnologia.Categoria.BACKEND, 3),
-    ('POO', Tecnologia.Categoria.BACKEND, 4),
 
-    ('PostgreSQL', Tecnologia.Categoria.DATABASE, 1),
-    ('SQL', Tecnologia.Categoria.DATABASE, 2),
-    ('Modelagem de dados', Tecnologia.Categoria.DATABASE, 3),
-    ('ETL', Tecnologia.Categoria.DATABASE, 4),
+    # STACK — o que roda de fato: linguagens, frameworks, bancos de dados.
+    ('Python', Tecnologia.Categoria.STACK, 1),
+    ('Django', Tecnologia.Categoria.STACK, 2),
+    ('Java', Tecnologia.Categoria.STACK, 3),
+    ('Laravel', Tecnologia.Categoria.STACK, 4),
+    ('PostgreSQL', Tecnologia.Categoria.STACK, 5),
+    ('SQL', Tecnologia.Categoria.STACK, 6),
+    ('JavaScript', Tecnologia.Categoria.STACK, 7),
+    ('HTML', Tecnologia.Categoria.STACK, 8),
+    ('CSS', Tecnologia.Categoria.STACK, 9),
 
-    ('JavaScript', Tecnologia.Categoria.FRONTEND, 1),
-    ('HTML', Tecnologia.Categoria.FRONTEND, 2),
-    ('CSS', Tecnologia.Categoria.FRONTEND, 3),
-
-    ('UML', Tecnologia.Categoria.ENGENHARIA, 1),
-    ('Engenharia de Requisitos', Tecnologia.Categoria.ENGENHARIA, 2),
-
+    # FERRAMENTAS — o que cerca o trabalho com a stack, sem ser a stack em
+    # si: controle de versão, editores/IDEs.
     ('Git', Tecnologia.Categoria.FERRAMENTAS, 1),
+    ('GitHub', Tecnologia.Categoria.FERRAMENTAS, 2),
+    ('VS Code', Tecnologia.Categoria.FERRAMENTAS, 3),
+    ('PyCharm', Tecnologia.Categoria.FERRAMENTAS, 4),
+    ('IntelliJ', Tecnologia.Categoria.FERRAMENTAS, 5),
+
+    # COMPETÊNCIAS — paradigma, técnica, processo, método: o raciocínio por
+    # trás do código, não uma tecnologia que se instala.
+    ('POO', Tecnologia.Categoria.COMPETENCIAS, 1),
+    ('Modelagem de dados', Tecnologia.Categoria.COMPETENCIAS, 2),
+    ('ETL', Tecnologia.Categoria.COMPETENCIAS, 3),
+    ('UML', Tecnologia.Categoria.COMPETENCIAS, 4),
+    ('Engenharia de Requisitos', Tecnologia.Categoria.COMPETENCIAS, 5),
 ]
 
 EXPERIENCIAS = [
