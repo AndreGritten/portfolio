@@ -161,9 +161,19 @@
         problema, porque não compete em altura com nada ao lado.
       {% endcomment %}
       <div class="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
-        <p class="revelar max-w-[62ch] text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
-          {{ PESSOA.perfil }}
-        </p>
+        {% comment %}
+          `PESSOA.perfil` é uma LISTA de parágrafos, não um bloco só — o
+          espaço entre eles (`space-y-5`) ajuda a preencher a coluna até a
+          altura dos dois cards ao lado, sem esticar artificialmente as
+          linhas de cada parágrafo. Ver o comentário em identidade.py.
+        {% endcomment %}
+        <div class="max-w-[62ch] space-y-5">
+          {% for paragrafo in PESSOA.perfil %}
+            <p class="revelar text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
+              {{ paragrafo }}
+            </p>
+          {% endfor %}
+        </div>
 
         {# Mesma razão do gap dos certificados: acima do deslocamento do `.revelar`. #}
         <div class="flex flex-col gap-5">
