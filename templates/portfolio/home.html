@@ -557,8 +557,23 @@
 
       <p data-brilho class="rotulo revelar mb-3">Projetos</p>
       <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
-        O que eu construí
+        Principais projetos
       </h2>
+      {% comment %}
+        Os três cartões abaixo são todos de repositório PRIVADO — por isso o
+        aviso aqui, uma vez só, em vez de repetir "repositório privado" em
+        cada cartão sem dizer por quê. Cada um é privado por um motivo
+        diferente (deploy de teste, uso interno, ainda em desenvolvimento), e
+        é mais claro resumir isso aqui do que espalhar em três descrições
+        curtas de 200 caracteres.
+      {% endcomment %}
+      <p class="revelar mb-12 max-w-[58ch] text-secundaria">
+        Projetos desenvolvidos por mim — os repositórios são privados: um já
+        está em deploy, outro é de uso interno e outro ainda está em
+        desenvolvimento. Para mais projetos, acesse o
+        <a href="{{ URL_GITHUB }}" target="_blank" rel="noopener"
+           class="text-carmim-claro underline underline-offset-2 hover:text-osso">meu GitHub</a>.
+      </p>
 
       {% if projetos %}
         {% comment %}

@@ -64,12 +64,19 @@ CONTATO = {
     'local': 'Curitiba — PR',
 }
 
+# A URL do GitHub existe como constante à parte, e não só dentro de
+# REDES_SOCIAIS, porque a seção de projetos também a usa isolada — encaixada
+# no meio de uma frase ("acesse o meu GitHub"), não numa lista de ícones de
+# rede social. Uma fonte só evita a URL duplicada em dois lugares que podem
+# divergir se o usuário do GitHub mudar um dia.
+URL_GITHUB = 'https://github.com/AndreGritten'
+
 # `icone` tem de existir em apps/core/icones.json.
 REDES_SOCIAIS = [
     {
         'rotulo': 'GitHub',
         'icone': 'Github',
-        'href': 'https://github.com/AndreGritten',
+        'href': URL_GITHUB,
     },
     {
         'rotulo': 'LinkedIn',
