@@ -39,6 +39,7 @@ const ICONES = {
   X: 'x',
   ArrowRight: 'arrow-right',
   ArrowUpRight: 'arrow-up-right',
+  Play: 'play',
   ChevronRight: 'chevron-right',
   ChevronDown: 'chevron-down',
   Download: 'download',

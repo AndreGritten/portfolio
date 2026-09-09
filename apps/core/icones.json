@@ -39,6 +39,10 @@
     "classe": "arrow-up-right",
     "interno": "<path d=\"M7 7h10v10\" /> <path d=\"M7 17 17 7\" />"
   },
+  "Play": {
+    "classe": "play",
+    "interno": "<polygon points=\"6 3 20 12 6 21 6 3\" />"
+  },
   "ChevronRight": {
     "classe": "chevron-right",
     "interno": "<path d=\"m9 18 6-6-6-6\" />"

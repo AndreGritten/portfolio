@@ -118,6 +118,53 @@ document.addEventListener('alpine:init', function () {
       },
     }
   })
+
+  /* ---------------------------------------------------------------------
+   * Modal de vídeo
+   *
+   * Estende o `modal` acima com uma coisa que o certificado não precisa:
+   * PARAR DE TOCAR ao fechar. Um <iframe> do YouTube continua rodando
+   * mesmo escondido atrás do `x-show="aberto"` — `display: none` não pausa
+   * mídia, só o esconde. Sem isto, fechar o modal deixaria o áudio do
+   * vídeo tocando escondido até a pessoa recarregar a página.
+   *
+   * A técnica é zerar o `src` do iframe ao fechar e recolocá-lo ao abrir —
+   * apagar o `src` interrompe o carregamento/reprodução na hora, e não há
+   * API do player para "pausar de fora" um iframe simples sem carregar o
+   * SDK do YouTube só para isto.
+   * ------------------------------------------------------------------- */
+  Alpine.data('modalVideo', function (idYoutube) {
+    return {
+      aberto: false,
+      idYoutube: idYoutube,
+
+      abrir() {
+        this.aberto = true
+        document.body.style.overflow = 'hidden'
+        this.$nextTick(() => {
+          const alvo = this.$refs.dialogo
+          if (alvo) alvo.focus()
+        })
+      },
+
+      fechar() {
+        this.aberto = false
+        document.body.style.overflow = ''
+        if (this.$refs.gatilho) this.$refs.gatilho.focus()
+      },
+
+      /* O `src` do template chama isto em vez de escrever a URL direto,
+         para a query string (autoplay, controles) morar num lugar só. */
+      urlEmbed() {
+        if (!this.aberto) return ''
+        return (
+          'https://www.youtube.com/embed/' +
+          this.idYoutube +
+          '?autoplay=1&rel=0'
+        )
+      },
+    }
+  })
 })
 
 /* -----------------------------------------------------------------------

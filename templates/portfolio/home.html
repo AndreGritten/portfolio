@@ -574,6 +574,7 @@
                   data-tecnologias="{{ projeto.slugs_tecnologias }}"
                   x-show="mostrar('{{ projeto.slugs_tecnologias|escapejs }}')"
                   x-transition.opacity.duration.200ms
+                  {% if projeto.id_video_youtube %}x-data="modalVideo('{{ projeto.id_video_youtube }}')"{% endif %}
                   class="revelar w-full flex-none lg:w-[22rem]">
                 <article class="card card-interativo flex h-full flex-col overflow-hidden">
 
@@ -613,6 +614,21 @@
                     {% endif %}
 
                     <div class="mt-auto flex flex-wrap gap-2">
+                      {% if projeto.id_video_youtube %}
+                        {% comment %}
+                          O botão de vídeo vem PRIMEIRO: entre ver o projeto
+                          rodando (em vídeo, sem sair do site) e ler o
+                          código-fonte, o vídeo é o que convence mais rápido
+                          quem só tem alguns segundos para cada cartão.
+                        {% endcomment %}
+                        <button type="button"
+                                x-ref="gatilho"
+                                @click="abrir()"
+                                class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                          {% icone "Play" size=14 aria_hidden="true" %}
+                          Ver vídeo
+                        </button>
+                      {% endif %}
                       {% if projeto.link_github %}
                         <a href="{{ projeto.link_github }}" target="_blank" rel="noopener"
                            class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
@@ -622,12 +638,12 @@
                       {% endif %}
                       {% if projeto.link_deploy %}
                         <a href="{{ projeto.link_deploy }}" target="_blank" rel="noopener"
-                           class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                           class="{% if projeto.id_video_youtube %}btn-linha{% else %}btn-carmim btn-carmim-em-cartao{% endif %} !min-h-9 !px-3 !py-1.5 !text-xs">
                           {% icone "ArrowUpRight" size=14 aria_hidden="true" %}
                           Ver no ar
                         </a>
                       {% endif %}
-                      {% if not projeto.link_github and not projeto.link_deploy %}
+                      {% if not projeto.link_github and not projeto.link_deploy and not projeto.id_video_youtube %}
                         <span class="font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
                           Repositório privado
                         </span>
@@ -635,6 +651,68 @@
                     </div>
                   </div>
                 </article>
+
+                {% if projeto.id_video_youtube %}
+                  {% comment %}
+                    O modal do vídeo. Mesmo padrão do modal de certificado:
+                    `x-teleport="body"` é obrigatório, não decorativo — este
+                    <li> é `.revelar`, e `.movimento .revelar` (input.css)
+                    aplica um `transform`, que faz do <li> o bloco contentor
+                    de qualquer `position: fixed` dentro dele. Sem o
+                    teleporte, o `inset-0` do diálogo seria resolvido contra
+                    a caixa do cartão na esteira horizontal — um painel
+                    espremido de 22rem de largura, não um modal centralizado
+                    na janela. Ver o comentário completo no modal de
+                    certificado, mais acima, para a explicação de por quê.
+
+                    `x-show="aberto"` some o diálogo, mas NÃO some o áudio de
+                    um <iframe> tocando por trás — por isso o `src` só existe
+                    enquanto `aberto` é verdadeiro (`urlEmbed()` devolve
+                    string vazia quando fechado), e o Alpine troca o `src`
+                    do zero a cada abertura. Um iframe com `src=""` não
+                    carrega nada, então fechar o modal PARA o vídeo de
+                    verdade, não só o esconde.
+                  {% endcomment %}
+                  <template x-teleport="body">
+                    <div x-cloak x-show="aberto"
+                         x-transition.opacity.duration.200ms
+                         @keydown.escape.window="fechar()"
+                         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                         role="dialog" aria-modal="true"
+                         aria-labelledby="video-titulo-{{ projeto.pk }}">
+                      <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
+
+                      <div x-ref="dialogo" tabindex="-1"
+                           class="card relative w-full max-w-4xl border-borda-forte bg-fundo p-4 shadow-2xl shadow-black/60 sm:p-6">
+                        <div class="mb-4 flex items-start justify-between gap-4">
+                          <h3 id="video-titulo-{{ projeto.pk }}" class="titulo-cartao text-lg">
+                            {{ projeto.titulo }}
+                          </h3>
+                          <button type="button" @click="fechar()" aria-label="Fechar"
+                                  class="-m-1 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+                            {% icone "X" size=19 %}
+                          </button>
+                        </div>
+
+                        {% comment %}
+                          `aspect-video` (16:9) mantém o player proporcional
+                          em qualquer largura de tela, sem barra preta nem
+                          corte. O player do YouTube já entrega os controles
+                          pedidos — velocidade, voltar/avançar, qualidade,
+                          tela cheia — sem precisar reconstruir nada disso.
+                        {% endcomment %}
+                        <div class="aspect-video w-full overflow-hidden rounded-xl bg-onix">
+                          <iframe :src="urlEmbed()"
+                                  class="h-full w-full"
+                                  title="{{ projeto.titulo }} — vídeo de demonstração"
+                                  frameborder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowfullscreen></iframe>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                {% endif %}
               </li>
             {% endfor %}
           </ul>

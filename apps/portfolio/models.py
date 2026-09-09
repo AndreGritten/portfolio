@@ -13,11 +13,25 @@ cadastrado com "PostgresSQL" em vez de "PostgreSQL".
 cada emprego novo viraria um commit.
 """
 
+import re
+
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Case, IntegerField, Value, When
 from django.utils.text import slugify
+
+# Casa os três formatos de URL que alguém colaria a partir da barra de
+# endereço ou do botão "Compartilhar" do YouTube:
+#   watch?v=ID        — a página normal do vídeo
+#   youtu.be/ID       — o link curto que o botão "Compartilhar" gera
+#   embed/ID          — caso alguém cole o link que já é de incorporação
+# O ID do YouTube é sempre 11 caracteres em [A-Za-z0-9_-], então travar o
+# tamanho evita capturar parâmetros extras que venham colados depois (como
+# `&t=30s` de um link com timestamp).
+PADRAO_ID_YOUTUBE = re.compile(
+    r'(?:youtube\.com/(?:watch\?v=|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})'
+)
 
 
 def storage_de_arquivo():
@@ -153,6 +167,16 @@ class Projeto(models.Model):
     )
     link_github = models.URLField('link do GitHub', blank=True)
     link_deploy = models.URLField('link do site publicado', blank=True)
+    link_video = models.URLField(
+        'link do vídeo (YouTube)',
+        blank=True,
+        help_text='Cole a URL da página do vídeo no YouTube, do jeito que '
+                  'aparece na barra de endereço — funciona com o link '
+                  'completo, o link curto (youtu.be) ou o link de '
+                  '"compartilhar". Recomendado como "não listado" para não '
+                  'aparecer em busca nem no seu canal, só para quem tem o '
+                  'link. Abre num player embutido, sem sair do site.',
+    )
 
     destaque = models.BooleanField(
         'em destaque',
@@ -184,6 +208,23 @@ class Projeto(models.Model):
         if not self.slug:
             self.slug = slugify(self.titulo)
         super().save(*args, **kwargs)
+
+    @property
+    def id_video_youtube(self):
+        """
+        O ID de 11 caracteres do vídeo, extraído de qualquer formato de URL
+        que alguém cole no admin — ou `None` sem vídeo ou com um link que não
+        bate com nenhum formato reconhecido do YouTube.
+
+        Fica aqui, e não no template, porque a extração é uma regra de
+        negócio (o que conta como "link válido do YouTube"), não uma
+        formatação de exibição — e uma regex não pertence a um template
+        Django, que não tem como testá-la isoladamente.
+        """
+        if not self.link_video:
+            return None
+        casado = PADRAO_ID_YOUTUBE.search(self.link_video)
+        return casado.group(1) if casado else None
 
     @property
     def slugs_tecnologias(self):

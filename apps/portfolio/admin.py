@@ -64,7 +64,7 @@ class ProjetoAdmin(admin.ModelAdmin):
             'fields': ('descricao_curta', 'descricao', 'imagem', 'previa', 'tecnologias'),
         }),
         ('Links', {
-            'fields': ('link_github', 'link_deploy'),
+            'fields': ('link_github', 'link_deploy', 'link_video'),
         }),
         ('Exibição', {
             'fields': ('destaque', 'publicado', 'ordem_exibicao'),
