@@ -756,7 +756,14 @@
               </h3>
               <ul class="flex flex-wrap gap-2">
                 {% for tec in grupo.list %}
-                  <li><span class="tag">{{ tec.nome }}</span></li>
+                  <li>
+                    <span class="tag">
+                      {% if tec.slug|tem_icone_marca %}
+                        {% icone_marca tec.slug size=14 class="shrink-0" aria_hidden="true" %}
+                      {% endif %}
+                      {{ tec.nome }}
+                    </span>
+                  </li>
                 {% endfor %}
               </ul>
             </div>
