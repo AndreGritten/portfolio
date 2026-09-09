@@ -142,16 +142,6 @@ class HomeTests(TestCase):
         self.assertContains(resposta, 'Sistema publicado')
         self.assertNotContains(resposta, 'Rascunho escondido')
 
-    def test_filtro_so_lista_tecnologia_de_projeto_publicado(self):
-        """
-        Uma pílula que não filtra nada é uma promessa que a página não cumpre.
-        SQL só aparece num projeto despublicado, então não pode virar filtro.
-        """
-        resposta = self.client.get(reverse('portfolio:home'))
-        slugs = [t.slug for t in resposta.context['tecnologias_filtro']]
-        self.assertIn('python', slugs)
-        self.assertNotIn('sql', slugs)
-
     def test_habilidades_listam_toda_tecnologia(self):
         """O quadro de habilidades é o currículo, não o índice dos projetos."""
         resposta = self.client.get(reverse('portfolio:home'))
@@ -178,7 +168,7 @@ class HomeTests(TestCase):
 
         self.assertEqual(
             categorias,
-            ['backend', 'database', 'frontend', 'engenharia', 'ferramentas'],
+            ['backend', 'database', 'frontend', 'ferramentas', 'engenharia'],
         )
 
     def test_pagina_abre_sem_nenhum_dado(self):
@@ -222,16 +212,6 @@ class ModeloTests(TestCase):
     def test_slug_sai_do_nome(self):
         tec = Tecnologia.objects.create(nome='Engenharia de Requisitos')
         self.assertEqual(tec.slug, 'engenharia-de-requisitos')
-
-    def test_slugs_de_tecnologias_separados_por_espaco(self):
-        projeto = Projeto.objects.create(titulo='Projeto', descricao_curta='.')
-        projeto.tecnologias.add(
-            Tecnologia.objects.create(nome='Python'),
-            Tecnologia.objects.create(nome='PostgreSQL'),
-        )
-        self.assertEqual(
-            sorted(projeto.slugs_tecnologias.split()), ['postgresql', 'python']
-        )
 
 
 class SemearTests(TestCase):
@@ -306,17 +286,23 @@ class CacheDaHomeTests(TestCase):
         Se este teste falhar depois de uma alteração na `home`, a pergunta é se
         a consulta nova é necessária — não se o número deve subir.
 
-        Foram 5 até o cache passar a guardar o CONTEXTO em vez da resposta
-        pronta. A diferença é o `prefetch_related` das tecnologias: com o
-        queryset preguiçoso, sem nenhum projeto cadastrado, o Django pulava a
-        consulta do prefetch; agora o `list()` a materializa sempre.
+        Foram 6 até o filtro de projetos por tecnologia sair da página — a
+        consulta que buscava `tecnologias_em_uso` (as tecnologias com algum
+        projeto publicado, para montar os botões do filtro) não existe mais,
+        porque o filtro em si não existe mais.
 
-        A sexta consulta é essa, e não um N+1 — verificado contando com 3 e
-        com 10 projetos: sete consultas nos dois casos, ou seja, o número não
-        cresce com a quantidade de linhas, que é a definição do defeito que
-        este teste existe para pegar.
+        Antes disso, eram 5 até o cache passar a guardar o CONTEXTO em vez da
+        resposta pronta. A diferença naquele momento foi o `prefetch_related`
+        das tecnologias: com o queryset preguiçoso, sem nenhum projeto
+        cadastrado, o Django pulava a consulta do prefetch; o `list()` passou
+        a materializá-la sempre.
+
+        O número aqui não é um N+1 — verificado contando com 3 e com 10
+        projetos: mesma contagem nos dois casos, ou seja, não cresce com a
+        quantidade de linhas, que é a definição do defeito que este teste
+        existe para pegar.
         """
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(5):
             self.client.get(self.url)
 
     def test_salvar_no_admin_limpa_o_cache(self):

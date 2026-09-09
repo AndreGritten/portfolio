@@ -50,49 +50,6 @@ document.addEventListener('alpine:init', function () {
   })
 
   /* ---------------------------------------------------------------------
-   * Filtro de projetos
-   *
-   * Roda no navegador: os cartões já chegam renderizados do servidor e o
-   * filtro só decide quais mostrar. Recarregar a página para trocar de
-   * tecnologia custaria uma viagem ao servidor e perderia a posição de
-   * rolagem — numa lista que cabe inteira na memória, não há o que ganhar.
-   * ------------------------------------------------------------------- */
-  Alpine.data('filtroProjetos', function (lista) {
-    return {
-      ativo: 'todos',
-      /* As tecnologias de cada projeto, na mesma ordem dos cartões. Vem do
-         template. Ter a lista em memória é o que permite responder "sobrou
-         alguma coisa?" sem inspecionar o DOM — perguntar ao DOM quais nós
-         estão visíveis significa depender do formato exato que o `x-show`
-         escreve no atributo `style`, e isso quebra na primeira mudança do
-         Alpine. */
-      lista: lista || [],
-
-      selecionar(slug) {
-        this.ativo = slug
-        /* A esteira horizontal mede a largura do trilho, e esconder cartões
-           muda essa largura. O narrativa.js escuta para remedir. */
-        this.$dispatch('projetos:filtrados')
-      },
-
-      /* `data-tecnologias` é uma lista separada por espaço. O teste com
-         espaços em volta evita que "sql" case dentro de "postgresql". */
-      mostrar(slugs) {
-        if (this.ativo === 'todos') return true
-        return (' ' + slugs + ' ').indexOf(' ' + this.ativo + ' ') !== -1
-      },
-
-      /* Um filtro que esvazia a seção sem dizer nada parece um defeito. */
-      get vazio() {
-        var self = this
-        return !this.lista.some(function (slugs) {
-          return self.mostrar(slugs)
-        })
-      },
-    }
-  })
-
-  /* ---------------------------------------------------------------------
    * Modal de certificado
    * ------------------------------------------------------------------- */
   Alpine.data('modal', function () {

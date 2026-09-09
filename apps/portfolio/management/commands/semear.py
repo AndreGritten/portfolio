@@ -31,7 +31,6 @@ TECNOLOGIAS = [
     ('Django', Tecnologia.Categoria.BACKEND, 2),
     ('Laravel', Tecnologia.Categoria.BACKEND, 3),
     ('POO', Tecnologia.Categoria.BACKEND, 4),
-    ('Regras de negócio', Tecnologia.Categoria.BACKEND, 5),
 
     ('PostgreSQL', Tecnologia.Categoria.DATABASE, 1),
     ('SQL', Tecnologia.Categoria.DATABASE, 2),
@@ -44,7 +43,6 @@ TECNOLOGIAS = [
 
     ('UML', Tecnologia.Categoria.ENGENHARIA, 1),
     ('Engenharia de Requisitos', Tecnologia.Categoria.ENGENHARIA, 2),
-    ('CRUD', Tecnologia.Categoria.ENGENHARIA, 3),
 
     ('Git', Tecnologia.Categoria.FERRAMENTAS, 1),
 ]
@@ -58,9 +56,8 @@ EXPERIENCIAS = [
         'data_inicio': date(2025, 10, 1),
         'data_fim': None,
         'descricao': (
-            'Desenvolvimento e manutenção de sistema web utilizando Python e Django.\n'
-            'Desenvolvimento de funcionalidades, CRUDs e regras de negócio.\n'
-            'Criação de consultas e rotinas SQL em PostgreSQL para obtenção e '
+            'Desenvolvimento e manutenção de sistema web utilizando Django.\n'
+            'Criação de consultas e rotinas em Postgre para obtenção e '
             'tratamento de dados provenientes de ETL.\n'
             'Correção de bugs e implementação de melhorias no sistema.\n'
             'Participação na análise de requisitos e entendimento dos processos '

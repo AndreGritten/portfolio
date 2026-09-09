@@ -143,40 +143,22 @@
         {{ CONTATO.local }}
       </p>
 
-      <div class="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
-        <div>
-          <p class="revelar max-w-[62ch] text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
-            {{ PESSOA.perfil }}
-          </p>
+      {% comment %}
+        O `<dl>` de estatísticas SAIU de dentro da coluna de texto e virou um
+        bloco próprio, abaixo dos dois cards, ocupando a largura toda.
 
-          <dl class="revelar mt-10 grid grid-cols-3 gap-6 border-t border-borda pt-8">
-            <div>
-              {% comment %}
-                O número conta a partir do zero quando entra na tela
-                (narrativa.js). O valor no `data-contador` e o texto de dentro
-                são o MESMO — sem JavaScript, o texto já está certo.
-              {% endcomment %}
-              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
-                  data-contador="4">4</dd>
-              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
-                Período na PUCPR
-              </dt>
-            </div>
-            <div>
-              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
-                  data-contador="{{ certificados|length }}">{{ certificados|length }}</dd>
-              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
-                Certificações
-              </dt>
-            </div>
-            <div>
-              <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl">2028</dd>
-              <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
-                Conclusão prevista
-              </dt>
-            </div>
-          </dl>
-        </div>
+        Antes ele ficava embaixo do parágrafo, numa coluna ao lado dos cards
+        CAU/PR e PUCPR — e como o parágrafo é mais curto que os dois cards
+        juntos, sobrava um vão vazio no alto da coluna dos cards, e outro
+        embaixo da coluna de texto, onde os cards continuavam mas o texto já
+        tinha acabado. Duas colunas de altura diferente sempre deixam sobra
+        de um lado ou do outro; um bloco de largura total não tem esse
+        problema, porque não compete em altura com nada ao lado.
+      {% endcomment %}
+      <div class="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
+        <p class="revelar max-w-[62ch] text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
+          {{ PESSOA.perfil }}
+        </p>
 
         {# Mesma razão do gap dos certificados: acima do deslocamento do `.revelar`. #}
         <div class="flex flex-col gap-5">
@@ -185,7 +167,7 @@
             <h3 class="titulo-cartao mb-2 text-lg">CAU/PR</h3>
             <p class="text-sm leading-relaxed text-secundaria">
               Estagiário de TI em desenvolvimento de software desde outubro de 2025.
-              Sistema web em Python e Django, com rotinas SQL sobre dados de ETL.
+              Sistema web em Django, com rotinas em Postgre sobre dados de ETL.
             </p>
           </div>
           <div class="card revelar p-6">
@@ -198,6 +180,34 @@
           </div>
         </div>
       </div>
+
+      <dl class="revelar mt-12 grid grid-cols-3 gap-6 border-t border-borda pt-8">
+        {% comment %}
+          O número conta a partir do zero quando entra na tela
+          (narrativa.js). O valor no `data-contador` e o texto de dentro
+          são o MESMO — sem JavaScript, o texto já está certo.
+        {% endcomment %}
+        <div>
+          <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
+              data-contador="4">4</dd>
+          <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+            Período na PUCPR
+          </dt>
+        </div>
+        <div>
+          <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl"
+              data-contador="{{ certificados|length }}">{{ certificados|length }}</dd>
+          <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+            Certificações
+          </dt>
+        </div>
+        <div>
+          <dd class="font-display text-3xl font-extrabold text-carmim-claro sm:text-4xl">2028</dd>
+          <dt class="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-secundaria">
+            Conclusão prevista
+          </dt>
+        </div>
+      </dl>
     </div>
   </section>
 
@@ -229,11 +239,15 @@
                   <li class="revelar relative flex gap-5 pb-10 last:pb-0">
                     <span class="tl-marca {% if exp.em_curso %}tl-marca-atual{% endif %}" aria-hidden="true"></span>
                     <div class="card flex-1 p-5">
+                      {% comment %}
+                        Sem badge "Atual" separado: `exp.periodo` já termina
+                        em "— Atual" quando `em_curso` é verdadeiro (ver a
+                        property no model), e o marcador `tl-marca-atual` na
+                        timeline já acende visualmente. Um terceiro aviso
+                        dizendo a mesma coisa era ruído, não reforço.
+                      {% endcomment %}
                       <p class="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.13em] text-carmim-claro">
                         {{ exp.periodo }}
-                        {% if exp.em_curso %}
-                          <span class="ml-1.5 rounded bg-carmim px-1.5 py-0.5 text-osso">Atual</span>
-                        {% endif %}
                       </p>
                       <h4 class="titulo-cartao text-base">{{ exp.cargo }}</h4>
                       <p class="mt-1 text-sm text-secundaria">
@@ -272,11 +286,9 @@
                   <li class="revelar relative flex gap-5 pb-10 last:pb-0">
                     <span class="tl-marca {% if form.em_curso %}tl-marca-atual{% endif %}" aria-hidden="true"></span>
                     <div class="card flex-1 p-5">
+                      {% comment %} Mesma razão do bloco de experiência acima: sem badge redundante. {% endcomment %}
                       <p class="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.13em] text-carmim-claro">
                         {{ form.periodo }}
-                        {% if form.em_curso %}
-                          <span class="ml-1.5 rounded bg-carmim px-1.5 py-0.5 text-osso">Cursando</span>
-                        {% endif %}
                       </p>
                       <h4 class="titulo-cartao text-base">{{ form.cargo }}</h4>
                       <p class="mt-1 text-sm text-secundaria">
@@ -317,10 +329,11 @@
 
       <p data-brilho class="rotulo revelar mb-3">Certificações</p>
       <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
-        O que está comprovado
+        Certificados e cursos
       </h2>
       <p class="revelar mb-12 max-w-[58ch] text-secundaria">
-        Cada certificado tem verificação — link público da credencial ou o PDF original.
+        Cada certificado pode ser conferido: pelo link público da credencial
+        ou pelo PDF original.
       </p>
 
       {% if certificados %}
@@ -518,8 +531,7 @@
     `sticky`, e o canvas voltaria a ter a altura inteira da seção presa.
   {% endcomment %}
   <section id="projetos"
-           class="relative overflow-hidden malha-tecnica bg-breu px-6 py-secao"
-           x-data="filtroProjetos([{% for projeto in projetos %}'{{ projeto.slugs_tecnologias|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}])">
+           class="relative overflow-hidden malha-tecnica bg-breu px-6 py-secao">
 
     <div class="campo" aria-hidden="true">
       <canvas data-campo></canvas>
@@ -534,32 +546,6 @@
       </h2>
 
       {% if projetos %}
-        {% if tecnologias_filtro %}
-          <p class="revelar mb-8 max-w-[58ch] text-secundaria">
-            Filtre por tecnologia — a lista responde na hora, sem recarregar.
-          </p>
-
-          <div class="revelar mb-10 flex flex-wrap gap-2" role="group" aria-label="Filtrar projetos por tecnologia">
-            <button type="button"
-                    class="tag-filtro"
-                    :class="{ 'tag-ativa': ativo === 'todos' }"
-                    :aria-pressed="ativo === 'todos' ? 'true' : 'false'"
-                    @click="selecionar('todos')">
-              {% icone "Filter" size=13 aria_hidden="true" %}
-              Todos
-            </button>
-            {% for tec in tecnologias_filtro %}
-              <button type="button"
-                      class="tag-filtro"
-                      :class="{ 'tag-ativa': ativo === '{{ tec.slug|escapejs }}' }"
-                      :aria-pressed="ativo === '{{ tec.slug|escapejs }}' ? 'true' : 'false'"
-                      @click="selecionar('{{ tec.slug|escapejs }}')">
-                {{ tec.nome }}
-              </button>
-            {% endfor %}
-          </div>
-        {% endif %}
-
         {% comment %}
           A esteira. No desktop ela GRUDA e os cartões correm na horizontal
           (narrativa.js); abaixo de 1024px o `flex-col` devolve uma pilha
@@ -571,9 +557,6 @@
               class="flex flex-col gap-6 lg:w-max lg:flex-row lg:will-change-transform">
             {% for projeto in projetos %}
               <li data-projeto
-                  data-tecnologias="{{ projeto.slugs_tecnologias }}"
-                  x-show="mostrar('{{ projeto.slugs_tecnologias|escapejs }}')"
-                  x-transition.opacity.duration.200ms
                   {% if projeto.id_video_youtube %}x-data="modalVideo('{{ projeto.id_video_youtube }}')"{% endif %}
                   class="revelar w-full flex-none lg:w-[22rem]">
                 <article class="card card-interativo flex h-full flex-col overflow-hidden">
@@ -718,11 +701,6 @@
           </ul>
         </div>
 
-        <p x-cloak x-show="vazio" class="mt-8 text-secundaria">
-          Nenhum projeto usa essa tecnologia ainda.
-          <button type="button" @click="selecionar('todos')" class="link-texto">Ver todos</button>.
-        </p>
-
       {% else %}
         <div class="card mt-6 p-8">
           <p class="text-secundaria">
@@ -745,22 +723,26 @@
 
       <p data-brilho class="rotulo revelar mb-3">Habilidades</p>
       <h2 data-brilho class="titulo-secao revelar mb-12 text-[clamp(1.8rem,4.5vw,3rem)]">
-        Ferramentas de trabalho
+        Stack, ferramentas e habilidades
       </h2>
 
       {% if tecnologias %}
         {% comment %}
           `regroup` agrupa VIZINHOS, então a lista precisa chegar ordenada
-          pela chave — quem garante isso é `na_ordem_do_quadro()`, na view.
-          Agrupar por `get_categoria_display` traz o rótulo legível em vez do
-          valor cru do banco.
+          pela chave — quem garante isso é `na_ordem_do_quadro()`, no model.
 
-          Três colunas, e não quatro: são CINCO categorias, e numa grade de
-          quatro a quinta ficava sozinha numa segunda linha, parecendo sobra.
-          Em três, 5 vira 3 + 2 — e cada coluna ainda cabe "Engenharia e
-          metodologias" sem quebrar o rótulo.
+          Agrupar por `grupo_do_quadro`, e não por `get_categoria_display`:
+          são CINCO categorias no banco (Backend, Banco de dados, Frontend,
+          Engenharia e metodologias, Ferramentas), mas só TRÊS colunas na
+          tela. Backend, Frontend e Banco de dados viram "Stack" — são a
+          pilha que roda de fato —, "Engenharia e metodologias" vira
+          "Habilidades" — descreve melhor o que são: competência, não uma
+          tecnologia que se instala —, e "Ferramentas" continua sozinha. A
+          granularidade de cinco categorias segue existindo no admin, para
+          quem cadastra saber exatamente onde uma tecnologia nova entra; o
+          agrupamento em três é só a apresentação.
         {% endcomment %}
-        {% regroup tecnologias by get_categoria_display as grupos %}
+        {% regroup tecnologias by grupo_do_quadro as grupos %}
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
           {% for grupo in grupos %}
             <div class="revelar">
@@ -803,8 +785,8 @@
             Vamos conversar
           </h2>
           <p class="revelar mb-9 max-w-[42ch] leading-relaxed text-secundaria">
-            Estou aberto a oportunidades de estágio e desenvolvimento em Python
-            e Django. Escreva pelo formulário ou use os canais diretos.
+            Estou aberto a oportunidades de estágio e desenvolvimento em
+            Django. Escreva pelo formulário ou use os canais diretos.
           </p>
 
           <ul class="revelar space-y-4">
@@ -840,7 +822,15 @@
           </ul>
         </div>
 
-        <div class="card revelar p-7 sm:p-9">
+        {% comment %}
+          `bg-fundo` sobrescreve o `.card` padrão (osso a 4%, quase
+          transparente). Essa transparência sutil funciona bem sobre um
+          fundo estático, mas aqui atrás roda o `campo` — o canvas animado
+          que reage ao mouse — e o movimento passando por trás do texto e
+          dos campos atrapalhava o preenchimento. Um fundo sólido separa de
+          vez o formulário do desenho animado atrás dele.
+        {% endcomment %}
+        <div class="card revelar bg-fundo p-7 sm:p-9">
           <form method="post" action="{% url 'portfolio:contato' %}" novalidate>
             {% csrf_token %}
 

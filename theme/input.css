@@ -692,30 +692,6 @@
     @apply text-carmim-claro border-carmim-claro/50;
   }
 
-  /* Botão do filtro de projetos. O estado ativo muda a FORMA além da cor —
-     borda mais grossa e peso de fonte —, porque num filtro de vermelho sobre
-     vermelho a cor sozinha não separa. O `aria-pressed` vai no template. */
-  .tag-filtro {
-    @apply font-mono text-[0.68rem] font-medium uppercase tracking-[0.09em]
-           px-3 py-1.5 min-h-9 rounded-lg
-           border-2 border-osso/15 bg-transparent text-secundaria
-           hover:border-osso/35 hover:text-osso
-           transition-all duration-200
-           inline-flex items-center gap-1.5 whitespace-nowrap;
-  }
-
-  /* O `cursor-pointer` saiu da lista acima porque o cursor próprio esconde
-     o nativo de qualquer forma. Ele volta como reserva para quando o
-     cursor.js não roda — aí o ponteiro do sistema é tudo que existe, e o
-     filtro precisa se anunciar como clicável. */
-  html:not(.cursor-proprio) .tag-filtro {
-    cursor: pointer;
-  }
-
-  .tag-filtro.tag-ativa {
-    @apply border-carmim-claro text-carmim-claro bg-carmim-claro/10 font-bold;
-  }
-
   /* =====================================================================
    * LINHA DO TEMPO
    * ================================================================== */

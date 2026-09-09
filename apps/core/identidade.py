@@ -15,20 +15,22 @@ PESSOA = {
     'formacao': 'Estudante de Engenharia de Software',
     'cidade': 'Curitiba',
     'uf': 'PR',
-    # A frase de impacto do topo. Sai do "Perfil Profissional" do currículo,
-    # encurtada para caber em duas linhas na largura do hero.
-    'chamada': (
-        'Construo sistemas web em Python e Django — dos CRUDs e regras de '
-        'negócio às consultas SQL que alimentam os relatórios.'
-    ),
+    # A frase de impacto do topo. Curta de propósito: é a primeira coisa que
+    # se lê na página, e Django/Postgre já implicam Python/SQL — nomeá-los
+    # de novo seria redundante, não mais completo.
+    'chamada': 'Desenvolvedor de sistemas web com Django e Postgre.',
     # O parágrafo inteiro do perfil, para a seção "Sobre".
+    #
+    # "CRUD" e "regras de negócio" saíram: são o básico do trabalho, não uma
+    # habilidade que se destaca ao ser nomeada — e apareciam repetidos aqui
+    # e na chamada acima. "Modelagem de processos, análise de requisitos"
+    # descreve melhor o que de fato diferencia a experiência.
     'perfil': (
         'Estudante de Engenharia de Software (4º período), com experiência '
         'profissional em desenvolvimento de software web no CAU/PR. Atuação '
-        'com Python, Django, PostgreSQL e SQL, além de experiência acadêmica '
-        'com Laravel, JavaScript, HTML e CSS. Experiência com desenvolvimento '
-        'de funcionalidades, CRUDs, regras de negócio, consultas SQL, '
-        'manipulação de dados e manutenção de sistemas.'
+        'com Django e Postgre, além de experiência acadêmica com Laravel, '
+        'JavaScript, HTML e CSS. Perfil voltado a modelagem de processos, '
+        'análise de requisitos e manutenção de sistemas em produção.'
     ),
 }
 

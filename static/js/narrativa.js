@@ -343,17 +343,6 @@
       },
     })
 
-    /* O filtro esconde cartões, e a largura do trilho muda com isso. Sem
-       este refresh, a esteira continuaria calculada para a lista inteira e
-       sobraria um vão vazio no fim. O evento é disparado pelo Alpine, em
-       templates/portfolio/home.html. */
-    document.addEventListener('projetos:filtrados', function () {
-      /* Um quadro de espera: o `x-show` do Alpine ainda não tirou os cartões
-         do fluxo quando o evento chega, e medir agora daria a largura velha. */
-      requestAnimationFrame(function () {
-        ScrollTrigger.refresh()
-      })
-    })
   }
 
   /* Depois que as fontes carregam, as alturas mudam — e todo gatilho medido

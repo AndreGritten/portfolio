@@ -68,14 +68,30 @@ class TecnologiaQuerySet(models.QuerySet):
         Um `Case` resolve sem tocar no que está gravado. A alternativa seria
         renomear os valores para 'a-backend', 'b-database'… — uma migração e
         um dado feio para sempre, só para agradar a um ORDER BY.
+
+        O peso do GRUPO vem primeiro, e o da categoria depois: o template
+        agrupa a exibição em três colunas (Stack/Ferramentas/Habilidades) com
+        `{% regroup %}`, que exige que os itens do mesmo grupo cheguem
+        VIZINHOS — sem o peso de grupo na frente, Backend e Frontend (os
+        dois em "Stack") ficariam intercalados com Ferramentas no meio, e o
+        regroup criaria uma segunda entrada de "Stack" mais adiante em vez
+        de uma coluna só.
         """
-        pesos = [
+        pesos_categoria = [
             When(categoria=valor, then=Value(indice))
             for indice, valor in enumerate(self.model.ORDEM_DO_QUADRO)
         ]
         return self.alias(
-            peso=Case(*pesos, default=Value(99), output_field=IntegerField())
-        ).order_by('peso', 'ordem', 'nome')
+            peso_grupo=Case(
+                *[
+                    When(categoria=cat, then=Value(self.model.ORDEM_DO_GRUPO.index(grupo)))
+                    for cat, grupo in self.model.GRUPO_DO_QUADRO.items()
+                ],
+                default=Value(99),
+                output_field=IntegerField(),
+            ),
+            peso=Case(*pesos_categoria, default=Value(99), output_field=IntegerField()),
+        ).order_by('peso_grupo', 'peso', 'ordem', 'nome')
 
 
 class Tecnologia(models.Model):
@@ -98,6 +114,35 @@ class Tecnologia(models.Model):
         Categoria.ENGENHARIA,
         Categoria.FERRAMENTAS,
     ]
+
+    # O agrupamento VISUAL da seção de habilidades — três colunas, não cinco.
+    #
+    # "Stack" junta backend, frontend e banco de dados: são as tecnologias
+    # que compõem o que roda de fato (a pilha). "Ferramentas" continua
+    # separada, porque git/docker/etc. não são a stack em si, são o que
+    # cerca o trabalho com ela. "Engenharia e metodologias" (UML, análise de
+    # requisitos) passa a se chamar "Habilidades" no quadro, porque descreve
+    # melhor o que essas tags realmente são: não uma tecnologia que se
+    # instala, e sim uma competência.
+    #
+    # Existe como mapeamento à parte, e não como mudança no campo `categoria`
+    # em si: a granularidade de Backend/Frontend/Banco de dados continua
+    # valendo para quem edita no admin (a pessoa que cadastra sabe exatamente
+    # onde uma tecnologia nova se encaixa), e a apresentação em três colunas
+    # é só uma forma de agrupar essas cinco categorias na hora de exibir —
+    # trocar a vitrine sem reescrever o estoque.
+    GRUPO_DO_QUADRO = {
+        Categoria.BACKEND: 'Stack',
+        Categoria.FRONTEND: 'Stack',
+        Categoria.DATABASE: 'Stack',
+        Categoria.FERRAMENTAS: 'Ferramentas',
+        Categoria.ENGENHARIA: 'Habilidades',
+    }
+
+    # A ordem dos TRÊS grupos visuais — não confundir com ORDEM_DO_QUADRO,
+    # que ordena as cinco categorias originais e alimenta o filtro de
+    # projetos, onde a granularidade de verdade ainda importa.
+    ORDEM_DO_GRUPO = ['Stack', 'Ferramentas', 'Habilidades']
 
     objects = TecnologiaQuerySet.as_manager()
 
@@ -130,6 +175,11 @@ class Tecnologia(models.Model):
 
     def __str__(self):
         return self.nome
+
+    @property
+    def grupo_do_quadro(self):
+        """A coluna visual em que esta tag aparece — ver GRUPO_DO_QUADRO."""
+        return self.GRUPO_DO_QUADRO.get(self.categoria, 'Habilidades')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -225,16 +275,6 @@ class Projeto(models.Model):
             return None
         casado = PADRAO_ID_YOUTUBE.search(self.link_video)
         return casado.group(1) if casado else None
-
-    @property
-    def slugs_tecnologias(self):
-        """
-        Os slugs separados por espaço, para o atributo `data-tecnologias`.
-
-        O filtro roda no navegador, sem recarregar a página: os cartões já
-        chegam renderizados e o Alpine só decide quais mostrar.
-        """
-        return ' '.join(t.slug for t in self.tecnologias.all())
 
 
 class Certificado(models.Model):

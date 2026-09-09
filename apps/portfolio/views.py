@@ -238,20 +238,12 @@ def _dados_da_home():
     if dados is not None:
         return dados
 
-    tecnologias_em_uso = (
-        Tecnologia.objects
-        .filter(projetos__publicado=True)
-        .distinct()
-        .order_by('nome')
-    )
-
     dados = {
         'projetos': list(
             Projeto.objects
             .filter(publicado=True)
             .prefetch_related('tecnologias')
         ),
-        'tecnologias_filtro': list(tecnologias_em_uso),
         'tecnologias': list(Tecnologia.objects.na_ordem_do_quadro()),
         'certificados': list(Certificado.objects.all()),
         'experiencias': list(
