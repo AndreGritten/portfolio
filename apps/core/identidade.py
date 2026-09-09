@@ -16,9 +16,11 @@ PESSOA = {
     'cidade': 'Curitiba',
     'uf': 'PR',
     # A frase de impacto do topo. Curta de propósito: é a primeira coisa que
-    # se lê na página, e Django/Postgre já implicam Python/SQL — nomeá-los
-    # de novo seria redundante, não mais completo.
-    'chamada': 'Desenvolvedor de sistemas web com Django e Postgre.',
+    # se lê na página, e Django/PostgreSQL já implicam Python/SQL — nomeá-los
+    # de novo seria redundante, não mais completo. "PostgreSQL" é a grafia
+    # oficial do produto (P e S maiúsculos, sem espaço) — "Postgre" sozinho
+    # não é como o nome se escreve, é só um apelido comum.
+    'chamada': 'Desenvolvedor de sistemas web com Django e PostgreSQL.',
     # O perfil da seção "Sobre" — uma LISTA de parágrafos, não um bloco só.
     #
     # "CRUD" e "regras de negócio" saíram: são o básico do trabalho, não uma
@@ -38,7 +40,7 @@ PESSOA = {
         (
             'Estudante de Engenharia de Software (4º período) na PUCPR, com '
             'experiência profissional em desenvolvimento de software web no '
-            'CAU/PR. Atuação com Django e Postgre, além de experiência '
+            'CAU/PR. Atuação com Django e PostgreSQL, além de experiência '
             'acadêmica com Laravel, JavaScript, HTML e CSS. Perfil voltado a '
             'modelagem de processos e análise de requisitos.'
         ),

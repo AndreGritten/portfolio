@@ -34,18 +34,21 @@ TECNOLOGIAS = [
     ('Java', Tecnologia.Categoria.STACK, 3),
     ('Laravel', Tecnologia.Categoria.STACK, 4),
     ('PostgreSQL', Tecnologia.Categoria.STACK, 5),
-    ('SQL', Tecnologia.Categoria.STACK, 6),
-    ('JavaScript', Tecnologia.Categoria.STACK, 7),
-    ('HTML', Tecnologia.Categoria.STACK, 8),
-    ('CSS', Tecnologia.Categoria.STACK, 9),
+    ('MySQL', Tecnologia.Categoria.STACK, 6),
+    ('SQL', Tecnologia.Categoria.STACK, 7),
+    ('JavaScript', Tecnologia.Categoria.STACK, 8),
+    ('HTML', Tecnologia.Categoria.STACK, 9),
+    ('CSS', Tecnologia.Categoria.STACK, 10),
 
     # FERRAMENTAS — o que cerca o trabalho com a stack, sem ser a stack em
-    # si: controle de versão, editores/IDEs.
+    # si: controle de versão, editores/IDEs, clientes de banco de dados.
     ('Git', Tecnologia.Categoria.FERRAMENTAS, 1),
     ('GitHub', Tecnologia.Categoria.FERRAMENTAS, 2),
     ('VS Code', Tecnologia.Categoria.FERRAMENTAS, 3),
     ('PyCharm', Tecnologia.Categoria.FERRAMENTAS, 4),
     ('IntelliJ', Tecnologia.Categoria.FERRAMENTAS, 5),
+    ('pgAdmin', Tecnologia.Categoria.FERRAMENTAS, 6),
+    ('MySQL Workbench', Tecnologia.Categoria.FERRAMENTAS, 7),
 
     # COMPETÊNCIAS — paradigma, técnica, processo, método: o raciocínio por
     # trás do código, não uma tecnologia que se instala.
@@ -68,7 +71,7 @@ EXPERIENCIAS = [
             'Desenvolvimento e manutenção da plataforma interna CAUHUB, '
             'utilizando Django para digitalização de processos manuais e '
             'modernização de sistemas legados.\n\n'
-            'Desenvolvimento de rotinas e consultas em Postgre, incluindo '
+            'Desenvolvimento de rotinas e consultas em PostgreSQL, incluindo '
             'tratamento e obtenção de dados provenientes de processos de '
             'ETL.\n\n'
             'Participação na análise de requisitos e no mapeamento '

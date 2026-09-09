@@ -45,6 +45,7 @@ const ICONES = {
   django: 'siDjango',
   laravel: 'siLaravel',
   postgresql: 'siPostgresql',
+  mysql: 'siMysql',
   // "sql" e "etl" ficam de fora de propósito: SQL é uma linguagem, não um
   // produto com logo próprio, e usar o ícone de um SGBD específico (MySQL,
   // por exemplo) para representá-la seria impreciso — a tag não é sobre
@@ -56,9 +57,9 @@ const ICONES = {
   github: 'siGithub',
   pycharm: 'siPycharm',
   intellij: 'siIntellijidea',
-  // "vs-code" fica de fora: o simple-icons não publica o logo do VS Code
-  // (Microsoft não libera a marca para esse tipo de catálogo). A tag
-  // aparece só com texto, como SQL, UML etc.
+  // "vs-code", "pgadmin" e "mysql-workbench" ficam de fora: nenhuma das
+  // duas bibliotecas (simple-icons, devicon) publica o logo dessas
+  // ferramentas. As tags aparecem só com texto, como SQL, UML etc.
 }
 
 // slug de Tecnologia -> caminho do .svg dentro de node_modules/devicon.
