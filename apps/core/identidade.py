@@ -25,12 +25,26 @@ PESSOA = {
     # habilidade que se destaca ao ser nomeada — e apareciam repetidos aqui
     # e na chamada acima. "Modelagem de processos, análise de requisitos"
     # descreve melhor o que de fato diferencia a experiência.
+    #
+    # Estendido para incluir comunicação, criatividade e liderança/trabalho
+    # em equipe — traços reais, não só técnicos, que faltavam aqui. O
+    # parágrafo também ficou mais longo de propósito: ao lado, na mesma
+    # seção, ficam os cards de CAU/PR e PUCPR, mais altos que o texto
+    # original, e a diferença de altura deixava um vão vazio abaixo do
+    # parágrafo — ver o comentário no template sobre por que as estatísticas
+    # viraram um bloco à parte por causa desse mesmo tipo de problema.
     'perfil': (
-        'Estudante de Engenharia de Software (4º período), com experiência '
-        'profissional em desenvolvimento de software web no CAU/PR. Atuação '
-        'com Django e Postgre, além de experiência acadêmica com Laravel, '
-        'JavaScript, HTML e CSS. Perfil voltado a modelagem de processos, '
-        'análise de requisitos e manutenção de sistemas em produção.'
+        'Estudante de Engenharia de Software (4º período) na PUCPR, com '
+        'experiência profissional em desenvolvimento de software web no '
+        'CAU/PR. Atuação com Django e Postgre, além de experiência '
+        'acadêmica com Laravel, JavaScript, HTML e CSS. Perfil voltado a '
+        'modelagem de processos e análise de requisitos, unindo a parte '
+        'técnica a um jeito comunicativo e criativo de resolver problema. '
+        'Gosto de trabalhar em equipe e tenho facilidade para organizar e '
+        'liderar grupos, características que aparecem tanto nos projetos '
+        'acadêmicos quanto no dia a dia no CAU/PR, onde a rotina passa por '
+        'entender a necessidade de cada setor antes de transformá-la em '
+        'sistema.'
     ),
 }
 
