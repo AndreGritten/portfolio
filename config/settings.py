@@ -64,12 +64,13 @@ ALLOWED_HOSTS = config(
     cast=Csv(),
 )
 
-# O Render publica o domínio do serviço nesta variável. Acrescentá-la sozinha
-# evita que o primeiro deploy caia em DisallowedHost por uma configuração
-# manual esquecida.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# Não há mais leitura automática de hostname de plataforma aqui (havia uma
+# para RENDER_EXTERNAL_HOSTNAME, específica do Render). Decisão deliberada
+# na migração para o Fly.io: ALLOWED_HOSTS é sempre configurada explicitamente
+# via variável de ambiente, na plataforma que estiver hospedando — sem atalho
+# automático amarrado a um provedor específico. Um domínio novo (Fly, próprio,
+# ou o que vier depois) se resolve com uma linha na configuração de ambiente,
+# não com código novo aqui.
 
 # CSRF_TRUSTED_ORIGINS derivado de ALLOWED_HOSTS, e não só do hostname do
 # Render.
@@ -420,6 +421,19 @@ if not DEBUG and not RODANDO_TESTES:
     # ao 127.0.0.1 vira um 301 para https e não se testa mais nada.
     # Em produção fica ligado — é o padrão.
     SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+
+    # A ÚNICA isenção deste redirecionamento, e existe por um motivo de
+    # infraestrutura, não de conteúdo: o healthcheck do Fly.io bate na porta
+    # do container em HTTP puro, direto na rede interna, sem passar pelo
+    # proxy que faria a requisição parecer segura. Sem isto, o
+    # SecurityMiddleware devolvia 301 para a checagem, que só aceita 200 — e
+    # a máquina nunca saía do estado "critical" mesmo com o gunicorn de pé.
+    #
+    # Isenta SÓ `/saude/`, nunca a home nem qualquer rota com conteúdo. Uma
+    # exceção mais ampla teria o mesmo efeito de desligar o redirecionamento
+    # HTTPS para todo mundo — o ponto aqui é abrir a MENOR fresta possível,
+    # numa rota que não expõe nada além de "o processo está de pé".
+    SECURE_REDIRECT_EXEMPT = [r'^saude/$']
 
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

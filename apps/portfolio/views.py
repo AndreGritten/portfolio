@@ -7,7 +7,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import EmailMessage
-from django.http import FileResponse, Http404, HttpResponseRedirect
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.core.cache import cache
@@ -19,6 +19,33 @@ from .models import Certificado, Experiencia, Projeto, Tecnologia
 logger = logging.getLogger(__name__)
 
 NOME_ARQUIVO_CURRICULO = 'curriculo-andre-gritten.pdf'
+
+
+def saude(request):
+    """
+    Healthcheck do Fly.io. Só existe porque o redirecionamento HTTPS quebra
+    o healthcheck de infraestrutura — não porque a app precisasse de uma rota
+    dessas por qualquer outro motivo.
+
+    O Fly Proxy termina o TLS na borda; a chamada de healthcheck INTERNA bate
+    direto na porta do container, em HTTP puro, sem passar pelo proxy — não
+    carrega X-Forwarded-Proto nem fala TLS. Confirmado nos logs de produção,
+    nesta ordem:
+      1. Com `/` como alvo do check: SECURE_SSL_REDIRECT (settings.py) fazia
+         o SecurityMiddleware devolver 301 antes de qualquer view rodar — o
+         healthcheck só aceita 200, e a máquina nunca saía de "critical".
+      2. Tentativa de contornar dizendo ao Fly para falar HTTPS na checagem
+         (`protocol = "https"` no fly.toml): piorou — o gunicorn não termina
+         TLS, então recebia bytes de handshake criptografado como se fossem
+         uma requisição HTTP e rejeitava com "Invalid HTTP method".
+
+    A saída real é isentar SÓ esta rota do redirecionamento
+    (SECURE_REDIRECT_EXEMPT, settings.py) — nunca a home. Isentar `/` teria
+    o mesmo efeito prático de desligar o redirecionamento HTTPS para todo
+    mundo, e essa rota não expõe nada: nenhum dado do site, nenhum acesso ao
+    banco, só a confirmação de que o processo Django está de pé.
+    """
+    return HttpResponse('ok')
 
 # Quinze minutos é o TETO, não o intervalo de atualização: quem edita o admin
 # não espera nada, porque os signals limpam o cache na hora (ver signals.py).

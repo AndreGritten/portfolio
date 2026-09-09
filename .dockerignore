@@ -1,0 +1,27 @@
+# O que não precisa entrar na imagem do Fly. Menor contexto de build = build
+# mais rápido, e nada aqui é necessário dentro do container.
+
+.git/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Banco local — o container fala com o Supabase, nunca com SQLite.
+db.sqlite3
+
+# Segredos locais. As variáveis de produção vêm de `fly secrets set`, nunca
+# de um arquivo copiado para dentro da imagem.
+.env
+
+# Ferramentas de frontend (Tailwind, extração de ícones, download de fontes).
+# O CSS compilado, os ícones e as fontes já são versionados — rodar o site
+# não depende de Node, então ele não precisa estar na imagem.
+node_modules/
+
+# Gerado pelo collectstatic — a imagem gera o dela própria durante o build.
+# Copiar uma versão antiga da máquina local seria misturar dois builds.
+/staticfiles/
+
+# Migração em andamento: nada relacionado a Fly deve depender destes.
+/.claude/

@@ -1,0 +1,70 @@
+# Configuração do deploy no Fly.io.
+#
+# region: "ewr" (Secaucus, NJ) — não "yul": o Fly não tem região no Canadá.
+# Confirmado via `fly platform regions` em 2026-09-09. É a aposta geográfica
+# mais próxima do Supabase, que está em ca-central-1 (Montreal, AWS) —
+# prioridade decidida sobre latência até os visitantes, porque cada request
+# já faz pelo menos uma ida-volta ao banco.
+app = 'andregritten'
+primary_region = 'ewr'
+
+[build]
+
+[env]
+  # Só variáveis NÃO sensíveis aqui — este arquivo é versionado. ALLOWED_HOSTS
+  # não é segredo, então cabe aqui em vez de em `fly secrets`.
+  #
+  # "*" aqui é seguro e não é uma falha de segurança: o Django só usa
+  # ALLOWED_HOSTS para validar o CABEÇALHO HTTP HOST, não para controlar
+  # acesso — quem decide o que é aceito na borda é o proxy do Fly, e a app
+  # nunca fica exposta diretamente na internet fora dele.
+  #
+  # O curinga entrou por necessidade real, descoberta ao vivo: o healthcheck
+  # interno do Fly bate na máquina pelo IP da rede privada (ex.
+  # "172.19.0.162:8080"), não pelo domínio público — e esse IP muda a cada
+  # deploy/restart. Travar ALLOWED_HOSTS só no domínio público derrubava
+  # every healthcheck com DisallowedHost, e a máquina nunca saía do estado
+  # "critical" mesmo com o Django respondendo normalmente.
+  ALLOWED_HOSTS = 'andregritten.fly.dev,*'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+  # Uma machine só, sempre ligada. O CACHES do projeto usa LocMemCache (cache
+  # de processo — ver settings.py), e sua invalidação via signals só limpa o
+  # cache da machine que processou o save no admin. Mais de uma machine ativa
+  # ao mesmo tempo faria as outras servirem dados velhos até o TTL de 15 min
+  # expirar. Sem auto-stop: como é um site pessoal de baixo tráfego, não há
+  # ganho em desligar a machine, e desligar reintroduziria o mesmo problema de
+  # arranque frio que motivou esta migração.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  # `protocol = "https"` foi tentado e estava ERRADO — registrado aqui para
+  # não ser reintroduzido. Ele faz o healthcheck mandar bytes de handshake
+  # TLS direto para a porta 8080, mas o gunicorn dentro do container fala
+  # HTTP puro (quem termina TLS é o Fly Proxy, na borda, não a aplicação).
+  # Resultado visto nos logs: `Invalid HTTP method: '\x16\x03\x01...'` — o
+  # gunicorn recebendo bytes criptografados como se fossem uma linha HTTP.
+  # Voltou para HTTP simples abaixo.
+  [[http_service.checks]]
+    grace_period = '10s'
+    interval = '30s'
+    method = 'GET'
+    timeout = '5s'
+    path = '/saude/'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 512
+
+[deploy]
+  # migrate depende do banco de produção (DATABASE_URL real, só disponível em
+  # runtime via secrets) — por isso vai aqui, e não no Dockerfile. Roda uma
+  # vez, antes de cada deploy assumir tráfego. collectstatic é o oposto: não
+  # depende de segredo nenhum, só do código já presente, então roda mais cedo,
+  # no build da imagem (ver Dockerfile) — a imagem sai pronta e imutável.
+  release_command = 'python manage.py migrate'
