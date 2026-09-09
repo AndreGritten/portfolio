@@ -171,6 +171,33 @@
     ligar()
   })
 
+  /* O ponteiro entrou num IFRAME — o vídeo do modal, por exemplo.
+   *
+   * Um iframe é outro DOCUMENTO. Assim que o mouse cruza a borda dele, os
+   * eventos de `mousemove` da JANELA param de chegar — eles pertencem ao
+   * documento de dentro do iframe agora, ao qual este script não tem
+   * acesso (o YouTube é outra origem). O `mouseleave` acima não pega esse
+   * caso: ele só dispara quando o ponteiro sai da JANELA inteira, e aqui
+   * o ponteiro nunca saiu da janela, só entrou num filho dela. Sem este
+   * listener, o cursor desenhado ficava CONGELADO na borda do vídeo até a
+   * pessoa voltar o mouse para fora do iframe.
+   *
+   * MEDIDO, não suposto: a tentativa óbvia é checar
+   * `evento.relatedTarget === null` (o sinal padrão de "saiu do
+   * documento"), mas isso NÃO dispara ao entrar num iframe — verificado
+   * capturando os eventos reais num navegador. Quando o ponteiro cruza
+   * para dentro do iframe, o `mouseout` chega com
+   * `relatedTarget === <o próprio elemento IFRAME>`, não `null`. Checar
+   * isso é o sinal certo. */
+  document.addEventListener('mouseout', function (evento) {
+    var indo = evento.relatedTarget
+    if (!(indo && indo.tagName === 'IFRAME')) return
+    dentro = false
+    alvoForca = 0
+    document.documentElement.classList.add('cursor-fora')
+    ligar()
+  })
+
   /* O clique dá um retorno tátil no anel: encolhe e volta. É a única
      animação em CSS aqui — o resto é transform escrito por quadro. */
   window.addEventListener(
