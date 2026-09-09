@@ -56,13 +56,24 @@ EXPERIENCIAS = [
         'data_inicio': date(2025, 10, 1),
         'data_fim': None,
         'descricao': (
-            'Desenvolvimento e manutenção de sistema web utilizando Django.\n'
-            'Criação de consultas e rotinas em Postgre para obtenção e '
-            'tratamento de dados provenientes de ETL.\n'
-            'Correção de bugs e implementação de melhorias no sistema.\n'
-            'Participação na análise de requisitos e entendimento dos processos '
-            'dos setores.\n'
-            'Versionamento de código utilizando Git.'
+            'Desenvolvimento e manutenção da plataforma interna CAUHUB, '
+            'utilizando Django para digitalização de processos manuais e '
+            'modernização de sistemas legados.\n\n'
+            'Desenvolvimento de rotinas e consultas em Postgre, incluindo '
+            'tratamento e obtenção de dados provenientes de processos de '
+            'ETL.\n\n'
+            'Participação na análise de requisitos e no mapeamento '
+            'detalhado dos processos internos, compreendendo o fluxo de '
+            'trabalho e as necessidades de cada setor para transformação '
+            'em soluções digitais.\n\n'
+            'Desenvolvimento do CAU/UNI, plataforma voltada a estudantes de '
+            'Arquitetura e Urbanismo, simulando o processo de geração de '
+            'RRTs por meio da emissão de RADs para utilização em trabalhos '
+            'acadêmicos.\n\n'
+            'Correção de bugs, manutenção e implementação de melhorias '
+            'contínuas nas plataformas desenvolvidas.\n\n'
+            'Versionamento e gerenciamento do código-fonte utilizando Git, '
+            'seguindo práticas de desenvolvimento colaborativo.'
         ),
         'ordem_exibicao': 1,
     },
