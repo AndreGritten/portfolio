@@ -9,10 +9,15 @@
   variando claridade, e é isso que faz a sequência ler como profundidade em
   vez de como sete seções coladas.
 
-  A malha técnica aparece só onde a seção respira (topo, projetos, contato):
-  um campo escuro do tamanho da tela lê como vazio, e a malha dá superfície.
-  Nessas mesmas três seções mora o `[data-campo]`, o desenho que reage ao
-  mouse — a malha é o papel, o campo é o que está traçado nele.
+  A malha técnica aparece onde a seção respira e o fundo é escuro o bastante
+  para precisar de superfície (topo, contato): um campo escuro do tamanho da
+  tela lê como vazio, e a malha dá o papel. Projetos usa `bg-breu`, mais claro
+  — ali a malha estática por baixo do campo reativo lia como duas grades
+  sobrepostas, então a seção ficou só com o `[data-campo]`, sem a malha fixa.
+
+  Nas três seções mora o `[data-campo]`, o desenho que reage ao mouse — nas
+  que também têm `.malha-tecnica`, a malha é o papel e o campo é o que está
+  traçado nele.
 
   O movimento vive em static/js/narrativa.js. Aqui o que existe são as marcas
   que ele procura: `.revelar`, `[data-revelar-grupo]`, `[data-contador]`,
@@ -531,7 +536,7 @@
     `sticky`, e o canvas voltaria a ter a altura inteira da seção presa.
   {% endcomment %}
   <section id="projetos"
-           class="relative overflow-hidden malha-tecnica bg-breu px-6 py-secao">
+           class="relative overflow-hidden bg-breu px-6 py-secao">
 
     <div class="campo" aria-hidden="true">
       <canvas data-campo></canvas>
