@@ -586,8 +586,16 @@
           <ul data-trilho
               class="flex flex-col gap-6 lg:w-max lg:flex-row lg:will-change-transform">
             {% for projeto in projetos %}
+              {% comment %}
+                `x-data` vive no `<li>` incondicionalmente agora — antes só
+                aparecia com vídeo, mas o modal de detalhes (o texto longo em
+                `projeto.descricao`) precisa do mesmo componente mesmo sem
+                vídeo nenhum. `modalProjeto` aceita `idYoutube` vazio sem
+                problema: o botão "Ver vídeo" dentro do modal de detalhes só
+                é desenhado quando `projeto.id_video_youtube` existe.
+              {% endcomment %}
               <li data-projeto
-                  {% if projeto.id_video_youtube %}x-data="modalVideo('{{ projeto.id_video_youtube }}')"{% endif %}
+                  x-data="modalProjeto('{{ projeto.id_video_youtube|default:'' }}')"
                   class="revelar w-full flex-none lg:w-[22rem]">
                 <article class="card card-interativo flex h-full flex-col overflow-hidden">
 
@@ -635,11 +643,27 @@
                           quem só tem alguns segundos para cada cartão.
                         {% endcomment %}
                         <button type="button"
-                                x-ref="gatilho"
-                                @click="abrir()"
+                                x-ref="gatilhoVideo"
+                                @click="abrirVideo()"
                                 class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
                           {% icone "Play" size=14 aria_hidden="true" %}
                           Ver vídeo
+                        </button>
+                      {% endif %}
+                      {% if projeto.descricao %}
+                        {% comment %}
+                          "Detalhes" só aparece com `descricao` preenchida —
+                          um botão que abre um modal quase vazio (só o que já
+                          está em `descricao_curta`, repetido) não vale o
+                          clique. O card de certificado usa o mesmo texto de
+                          rótulo para a mesma ideia (ver mais informação num
+                          diálogo), então o botão repete a convenção.
+                        {% endcomment %}
+                        <button type="button"
+                                x-ref="gatilhoDetalhes"
+                                @click="abrirDetalhes()"
+                                class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                          Detalhes
                         </button>
                       {% endif %}
                       {% if projeto.link_github %}
@@ -656,7 +680,7 @@
                           Ver no ar
                         </a>
                       {% endif %}
-                      {% if not projeto.link_github and not projeto.link_deploy and not projeto.id_video_youtube %}
+                      {% if not projeto.link_github and not projeto.link_deploy and not projeto.id_video_youtube and not projeto.descricao %}
                         <span class="font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
                           Repositório privado
                         </span>
@@ -664,6 +688,89 @@
                     </div>
                   </div>
                 </article>
+
+                {% if projeto.descricao %}
+                  {% comment %}
+                    O modal de detalhes. Mesmo padrão do modal de certificado
+                    quanto ao `x-teleport="body"` — ver o comentário completo
+                    no modal de vídeo, logo abaixo, para a explicação de por
+                    quê ele é obrigatório e não decorativo.
+
+                    `linebreaks` porque `descricao` é texto livre digitado no
+                    admin, com parágrafos separados por linha em branco — sem
+                    o filtro, tudo sairia colado num bloco só.
+                  {% endcomment %}
+                  <template x-teleport="body">
+                    <div x-cloak x-show="detalhesAberto"
+                         x-transition.opacity.duration.200ms
+                         @keydown.escape.window="fecharDetalhes()"
+                         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                         role="dialog" aria-modal="true"
+                         aria-labelledby="detalhes-titulo-{{ projeto.pk }}">
+                      <div class="absolute inset-0 bg-black/70" @click="fecharDetalhes()"></div>
+
+                      <div x-ref="dialogoDetalhes" tabindex="-1"
+                           class="card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto border-borda-forte bg-fundo p-6 shadow-2xl shadow-black/60 sm:p-7">
+                        <div class="mb-5 flex items-start justify-between gap-4">
+                          <h3 id="detalhes-titulo-{{ projeto.pk }}" class="titulo-cartao text-xl">
+                            {{ projeto.titulo }}
+                          </h3>
+                          <button type="button" @click="fecharDetalhes()" aria-label="Fechar"
+                                  class="-m-1 shrink-0 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+                            {% icone "X" size=19 %}
+                          </button>
+                        </div>
+
+                        <div class="prose-projeto text-sm leading-relaxed text-secundaria">
+                          {{ projeto.descricao|linebreaks }}
+                        </div>
+
+                        {% if projeto.tecnologias.all or projeto.id_video_youtube or projeto.link_github or projeto.link_deploy %}
+                          <div class="mt-6 flex flex-wrap items-center gap-2 border-t border-borda pt-5">
+                            {% if projeto.id_video_youtube %}
+                              {% comment %}
+                                O botão que o usuário pediu: acesso ao vídeo
+                                DE DENTRO do modal de detalhes, sem precisar
+                                fechar este e caçar o botão "Ver vídeo" de
+                                volta no cartão. `abrirVideo()` já fecha este
+                                modal sozinho — ver o comentário no
+                                componente, em interface.js.
+                              {% endcomment %}
+                              <button type="button"
+                                      @click="abrirVideo()"
+                                      class="btn-carmim btn-carmim-em-cartao !min-h-9 !px-3 !py-1.5 !text-xs">
+                                {% icone "Play" size=14 aria_hidden="true" %}
+                                Ver vídeo
+                              </button>
+                            {% endif %}
+                            {% if projeto.link_github %}
+                              <a href="{{ projeto.link_github }}" target="_blank" rel="noopener"
+                                 class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                                {% icone "Github" size=14 aria_hidden="true" %}
+                                Código
+                              </a>
+                            {% endif %}
+                            {% if projeto.link_deploy %}
+                              <a href="{{ projeto.link_deploy }}" target="_blank" rel="noopener"
+                                 class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                                {% icone "ArrowUpRight" size=14 aria_hidden="true" %}
+                                Ver no ar
+                              </a>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+
+                        {% if projeto.tecnologias.all %}
+                          <ul class="mt-4 flex flex-wrap gap-1.5">
+                            {% for tec in projeto.tecnologias.all %}
+                              <li><span class="tag">{{ tec.nome }}</span></li>
+                            {% endfor %}
+                          </ul>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </template>
+                {% endif %}
 
                 {% if projeto.id_video_youtube %}
                   {% comment %}
@@ -678,30 +785,30 @@
                     na janela. Ver o comentário completo no modal de
                     certificado, mais acima, para a explicação de por quê.
 
-                    `x-show="aberto"` some o diálogo, mas NÃO some o áudio de
-                    um <iframe> tocando por trás — por isso o `src` só existe
-                    enquanto `aberto` é verdadeiro (`urlEmbed()` devolve
-                    string vazia quando fechado), e o Alpine troca o `src`
-                    do zero a cada abertura. Um iframe com `src=""` não
-                    carrega nada, então fechar o modal PARA o vídeo de
-                    verdade, não só o esconde.
+                    `x-show="videoAberto"` some o diálogo, mas NÃO some o
+                    áudio de um <iframe> tocando por trás — por isso o `src`
+                    só existe enquanto `videoAberto` é verdadeiro
+                    (`urlEmbed()` devolve string vazia quando fechado), e o
+                    Alpine troca o `src` do zero a cada abertura. Um iframe
+                    com `src=""` não carrega nada, então fechar o modal PARA
+                    o vídeo de verdade, não só o esconde.
                   {% endcomment %}
                   <template x-teleport="body">
-                    <div x-cloak x-show="aberto"
+                    <div x-cloak x-show="videoAberto"
                          x-transition.opacity.duration.200ms
-                         @keydown.escape.window="fechar()"
+                         @keydown.escape.window="fecharVideo()"
                          class="fixed inset-0 z-[70] flex items-center justify-center p-4"
                          role="dialog" aria-modal="true"
                          aria-labelledby="video-titulo-{{ projeto.pk }}">
-                      <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
+                      <div class="absolute inset-0 bg-black/70" @click="fecharVideo()"></div>
 
-                      <div x-ref="dialogo" tabindex="-1"
+                      <div x-ref="dialogoVideo" tabindex="-1"
                            class="card relative w-full max-w-4xl border-borda-forte bg-fundo p-4 shadow-2xl shadow-black/60 sm:p-6">
                         <div class="mb-4 flex items-start justify-between gap-4">
                           <h3 id="video-titulo-{{ projeto.pk }}" class="titulo-cartao text-lg">
                             {{ projeto.titulo }}
                           </h3>
-                          <button type="button" @click="fechar()" aria-label="Fechar"
+                          <button type="button" @click="fecharVideo()" aria-label="Fechar"
                                   class="-m-1 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
                             {% icone "X" size=19 %}
                           </button>

@@ -693,6 +693,19 @@
   }
 
   /* =====================================================================
+   * TEXTO LONGO DE PROJETO (modal de detalhes)
+   *
+   * `descricao` vem do `linebreaks` do Django, que separa parágrafos em
+   * `<p>` — sem espaço entre eles, um texto de vários parágrafos lê como um
+   * bloco só, colado. `:not(:last-child)` evita sobra de espaço embaixo do
+   * último parágrafo, antes da barra de botões que vem a seguir.
+   * ================================================================== */
+
+  .prose-projeto p:not(:last-child) {
+    @apply mb-4;
+  }
+
+  /* =====================================================================
    * LINHA DO TEMPO
    * ================================================================== */
 

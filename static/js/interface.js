@@ -77,43 +77,71 @@ document.addEventListener('alpine:init', function () {
   })
 
   /* ---------------------------------------------------------------------
-   * Modal de vídeo
+   * Modal de projeto: detalhes + vídeo, no MESMO escopo.
    *
-   * Estende o `modal` acima com uma coisa que o certificado não precisa:
-   * PARAR DE TOCAR ao fechar. Um <iframe> do YouTube continua rodando
-   * mesmo escondido atrás do `x-show="aberto"` — `display: none` não pausa
-   * mídia, só o esconde. Sem isto, fechar o modal deixaria o áudio do
-   * vídeo tocando escondido até a pessoa recarregar a página.
+   * Um `<li>` só aceita um `x-data` — por isso os dois diálogos do cartão
+   * de projeto (a descrição longa e o vídeo de demonstração) vivem num
+   * componente só, com dois booleanos independentes (`detalhesAberto`,
+   * `videoAberto`) em vez de dois componentes separados brigando pelo
+   * mesmo elemento. O botão "Ver vídeo" DE DENTRO do modal de detalhes
+   * fecha um e abre o outro — por isso as duas ações moram juntas, e não
+   * cada uma isolada como o `modal` genérico do certificado.
    *
-   * A técnica é zerar o `src` do iframe ao fechar e recolocá-lo ao abrir —
-   * apagar o `src` interrompe o carregamento/reprodução na hora, e não há
-   * API do player para "pausar de fora" um iframe simples sem carregar o
-   * SDK do YouTube só para isto.
+   * PARAR DE TOCAR ao fechar o vídeo: um <iframe> do YouTube continua
+   * rodando mesmo escondido atrás do `x-show` — `display: none` não pausa
+   * mídia, só o esconde. A técnica é zerar o `src` do iframe ao fechar e
+   * recolocá-lo ao abrir; não há API do player para "pausar de fora" um
+   * iframe simples sem carregar o SDK do YouTube só para isto.
    * ------------------------------------------------------------------- */
-  Alpine.data('modalVideo', function (idYoutube) {
+  Alpine.data('modalProjeto', function (idYoutube) {
     return {
-      aberto: false,
+      detalhesAberto: false,
+      videoAberto: false,
       idYoutube: idYoutube,
 
-      abrir() {
-        this.aberto = true
+      abrirDetalhes() {
+        this.detalhesAberto = true
         document.body.style.overflow = 'hidden'
         this.$nextTick(() => {
-          const alvo = this.$refs.dialogo
-          if (alvo) alvo.focus()
+          if (this.$refs.dialogoDetalhes) this.$refs.dialogoDetalhes.focus()
         })
       },
 
-      fechar() {
-        this.aberto = false
+      fecharDetalhes() {
+        this.detalhesAberto = false
+        // Só devolve a rolagem se o vídeo também não estiver aberto por
+        // cima — trocar de modal (detalhes -> vídeo) não deve deixar a
+        // página rolar por trás no instante entre um fechar e o outro abrir.
+        if (!this.videoAberto) document.body.style.overflow = ''
+        if (this.$refs.gatilhoDetalhes) this.$refs.gatilhoDetalhes.focus()
+      },
+
+      abrirVideo() {
+        // Fecha o de detalhes por baixo: dois `fixed inset-0` empilhados
+        // deixariam o primeiro clicável por trás do overlay do segundo.
+        this.detalhesAberto = false
+        this.videoAberto = true
+        document.body.style.overflow = 'hidden'
+        this.$nextTick(() => {
+          if (this.$refs.dialogoVideo) this.$refs.dialogoVideo.focus()
+        })
+      },
+
+      fecharVideo() {
+        this.videoAberto = false
         document.body.style.overflow = ''
-        if (this.$refs.gatilho) this.$refs.gatilho.focus()
+        // O foco volta para quem abriu o vídeo — o gatilho do cartão
+        // quando havia descrição também (o vídeo foi aberto a partir do
+        // modal de detalhes, já fechado), senão o botão "Ver vídeo" do
+        // próprio cartão.
+        const alvo = this.$refs.gatilhoDetalhes || this.$refs.gatilhoVideo
+        if (alvo) alvo.focus()
       },
 
       /* O `src` do template chama isto em vez de escrever a URL direto,
          para a query string (autoplay, controles) morar num lugar só. */
       urlEmbed() {
-        if (!this.aberto) return ''
+        if (!this.videoAberto) return ''
         return (
           'https://www.youtube.com/embed/' +
           this.idYoutube +
