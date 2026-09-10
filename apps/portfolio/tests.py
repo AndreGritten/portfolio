@@ -15,7 +15,14 @@ from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
-from .models import Certificado, Experiencia, MensagemContato, Projeto, Tecnologia
+from .models import (
+    Certificado,
+    Experiencia,
+    MensagemContato,
+    Projeto,
+    Tecnologia,
+    Vivencia,
+)
 
 
 class ContatoTests(TestCase):
@@ -178,6 +185,93 @@ class HomeTests(TestCase):
         self.assertEqual(self.client.get(reverse('portfolio:home')).status_code, 200)
 
 
+class SegundaFaceTests(TestCase):
+    """
+    A face "fora da área" — as atividades de representação, clubes e MUN.
+
+    O que estes testes protegem é uma decisão de arquitetura que não se lê no
+    template: as DUAS faces vêm no mesmo HTML, sempre, e o botão do topo só
+    alterna qual está visível. Se alguém um dia trocar isso por carregamento
+    sob demanda, a face nova entrará no DOM depois do arranque do
+    narrativa.js, sem ScrollTrigger nenhum — e como `html.movimento` deixa
+    todo `.revelar` em opacidade 0, ela ficará invisível para sempre. O teste
+    que checa as duas faces no mesmo HTML é o que pega essa regressão.
+    """
+
+    def setUp(self):
+        self.url = reverse('portfolio:home')
+        self.vivencia = Vivencia.objects.create(
+            titulo='Representante de sala',
+            papel='Representante',
+            periodo='2025',
+            descricao_curta='Ponte entre a turma e a coordenação.',
+            publicado=True,
+        )
+
+    def test_vivencias_chegam_no_contexto(self):
+        resposta = self.client.get(self.url)
+        titulos = [v.titulo for v in resposta.context['vivencias']]
+        self.assertIn('Representante de sala', titulos)
+
+    def test_vivencia_despublicada_nao_aparece(self):
+        Vivencia.objects.create(
+            titulo='Rascunho de atividade',
+            descricao_curta='Não deve aparecer.',
+            publicado=False,
+        )
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'Representante de sala')
+        self.assertNotContains(resposta, 'Rascunho de atividade')
+
+    def test_as_duas_faces_vem_no_mesmo_html(self):
+        """
+        O ponto central: uma requisição traz as duas faces.
+
+        Não é preferência de estilo — é o que mantém as animações
+        funcionando. Ver o docstring da classe.
+        """
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'data-face="dev"')
+        self.assertContains(resposta, 'data-face="fora"')
+        # A face técnica e a de fora, juntas na mesma resposta.
+        self.assertContains(resposta, 'id="projetos"')
+        self.assertContains(resposta, 'id="vivencias"')
+
+    def test_contato_existe_uma_vez_so(self):
+        """
+        O formulário de contato serve às duas faces e mora FORA das duas.
+
+        Duplicá-lo criaria ids de campo repetidos (HTML inválido, e cada
+        `<label for>` passaria a apontar para o primeiro campo homônimo) e
+        dois formulários POST concorrentes na mesma página.
+        """
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.content.decode().count('id="contato"'), 1)
+
+    def test_salvar_vivencia_limpa_o_cache(self):
+        """Mesma razão dos outros modelos da home — ver os signals."""
+        self.client.get(self.url)
+
+        Vivencia.objects.create(
+            titulo='Clube de Cinema',
+            descricao_curta='Deve aparecer na hora.',
+            publicado=True,
+        )
+
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, 'Clube de Cinema')
+
+    def test_pagina_abre_sem_nenhuma_vivencia(self):
+        """A face existe mesmo vazia, com o estado vazio no lugar dos cartões."""
+        Vivencia.objects.all().delete()
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'id="vivencias"')
+
+    def test_slug_sai_do_titulo(self):
+        self.assertEqual(self.vivencia.slug, 'representante-de-sala')
+
+
 class ModeloTests(TestCase):
     def test_periodo_em_curso(self):
         exp = Experiencia.objects.create(
@@ -301,8 +395,14 @@ class CacheDaHomeTests(TestCase):
         projetos: mesma contagem nos dois casos, ou seja, não cresce com a
         quantidade de linhas, que é a definição do defeito que este teste
         existe para pegar.
+
+        Subiu de 5 para 6 com as `Vivencia`, as atividades da segunda face do
+        site. É uma consulta a mais por VISITA CACHEADA (a cada quinze
+        minutos, ou a cada edição no admin), não por acesso — e as duas faces
+        vêm no mesmo HTML, então não há uma segunda requisição quando a pessoa
+        troca de lado.
         """
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             self.client.get(self.url)
 
     def test_salvar_no_admin_limpa_o_cache(self):

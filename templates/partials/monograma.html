@@ -1,19 +1,42 @@
-{% load estaticos %}{% comment %}
+{% comment %}
   A marca "AG" — o monograma na variante monoline.
 
-  É um SVG traçado (static/img/marca.svg), não mais o quadrado de canto
-  arredondado com as iniciais em mono que ficava aqui. O quadrado era um
-  substituto até existir marca; agora existe.
+  INLINE, e não `<img src="marca.svg">`, e a razão é a segunda face do site.
+  Um SVG carregado como imagem é um documento isolado: não enxerga o CSS da
+  página, não herda `currentColor`, e o `stroke` fica preso ao que estiver
+  escrito dentro do arquivo. Quando o site vira azul (`html[data-tema="azul"]`,
+  ver theme/input.css), a marca era a única coisa que continuava carmim — um
+  AG vermelho num cabeçalho azul, destoando de tudo em volta.
 
-  Vai como <img> e não inline: a marca aparece em quatro lugares (cabeçalho,
-  menu do celular, rodapé e 404) e o arquivo externo entra no cache uma vez
-  em vez de repetir dois quilobytes de path em cada página.
+  Inline, o `stroke="currentColor"` resolve pela cor do texto do elemento, que
+  `text-carmim-claro` define e o tema troca junto com o resto.
+
+  O CUSTO É REAL e vale registrar: são ~1,2KB de path repetidos nos quatro
+  lugares onde a marca aparece (cabeçalho, menu do celular, rodapé e 404), em
+  vez de um arquivo externo baixado uma vez e reaproveitado do cache. É o
+  preço de a marca acompanhar a face, e a página comprimida absorve isso sem
+  diferença perceptível.
+
+  `static/img/marca.svg` continua existindo — é a fonte do desenho, usada pelo
+  favicon e pelo gerador da imagem de Open Graph (tools/gerar_og.py). Mudou a
+  geometria lá, mude aqui também.
+
+  A GEOMETRIA É REGULARIZADA, não traçada crua. O desenho de origem era um
+  raster de 287px com ruído de compressão, e seguir a borda de pixel dele
+  deixava toda diagonal serrilhada — no tamanho grande o A saía enrugado. Cada
+  aresta foi girada para o ângulo dominante a que pertence e os cantos
+  refeitos como interseção das retas vizinhas. São 39 vértices em vez de 182.
+
+  Espessura 2,4 no viewBox de 64: medida no tamanho real de uso (36px). Abaixo
+  disso o contorno interno fecha e o A some dentro do G.
 
   Uso:
     {% include 'partials/monograma.html' with tamanho='lg' %}
-{% endcomment %}<img src="{% estatico 'img/marca.svg' %}"
-     alt=""
-     aria-hidden="true"
+{% endcomment %}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"
      width="{% if tamanho == 'lg' %}56{% elif tamanho == 'md' %}44{% else %}36{% endif %}"
      height="{% if tamanho == 'lg' %}56{% elif tamanho == 'md' %}44{% else %}36{% endif %}"
-     class="{% if tamanho == 'lg' %}h-14 w-14{% elif tamanho == 'md' %}h-11 w-11{% else %}h-9 w-9{% endif %} flex-none select-none">
+     role="img" aria-label="AG"
+     class="{% if tamanho == 'lg' %}h-14 w-14{% elif tamanho == 'md' %}h-11 w-11{% else %}h-9 w-9{% endif %} flex-none select-none text-carmim-claro">
+  <path d="M35.22 4.80L52.28 49.25L44.45 49.18L30.16 11.95L27.87 10.64L26.06 12.45L16.13 37.70L36.60 37.86L39.08 44.31L13.89 44.11L7.94 59.25L0.00 59.18L21.42 4.69Z M56.75 9.45L63.92 17.10L63.97 25.31L56.10 25.25L56.07 20.03L52.66 16.39L42.80 16.31L40.12 9.32Z M32.50 27.42L32.54 34.96L25.04 34.90L24.99 24.97L28.31 16.52Z M63.89 32.48L64.00 52.37L57.06 59.31L32.20 59.11L25.20 51.66L25.18 47.40L32.16 47.45L36.76 52.36L53.52 52.50L56.83 49.19L56.78 39.57L51.79 38.85L49.30 32.37Z"
+        fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+</svg>

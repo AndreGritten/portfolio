@@ -16,7 +16,7 @@ Três decisões que valem explicação:
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Certificado, Experiencia, MensagemContato, Projeto, Tecnologia
+from .models import Certificado, Experiencia, MensagemContato, Projeto, Tecnologia, Vivencia
 
 admin.site.site_header = 'Portfólio · André Gritten'
 admin.site.site_title = 'Portfólio'
@@ -109,6 +109,56 @@ class ProjetoAdmin(admin.ModelAdmin):
         if len(nomes) <= 3:
             return ', '.join(nomes)
         return f'{", ".join(nomes[:3])} +{len(nomes) - 3}'
+
+
+@admin.register(Vivencia)
+class VivenciaAdmin(admin.ModelAdmin):
+    list_display = ('miniatura', 'titulo', 'papel', 'periodo', 'publicado', 'ordem_exibicao')
+    # `titulo` fica de fora de list_editable pela mesma razão do ProjetoAdmin:
+    # `miniatura` é a primeira coluna, então o link para o formulário passa a
+    # ser o título, e o Django recusa editar em linha a coluna que é link.
+    list_editable = ('publicado', 'ordem_exibicao')
+    list_filter = ('publicado',)
+    search_fields = ('titulo', 'papel', 'descricao_curta', 'descricao')
+    prepopulated_fields = {'slug': ('titulo',)}
+    readonly_fields = ('criado_em', 'atualizado_em', 'previa')
+
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('titulo', 'slug', 'papel', 'periodo'),
+        }),
+        ('Conteúdo', {
+            'fields': ('descricao_curta', 'descricao', 'imagem', 'previa'),
+        }),
+        ('Exibição', {
+            'fields': ('publicado', 'ordem_exibicao'),
+            'description': 'A ordem de exibição vale do menor para o maior; o '
+                           'título desempata quando duas ficam no mesmo número.',
+        }),
+        ('Registro', {
+            'fields': ('criado_em', 'atualizado_em'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description='')
+    def miniatura(self, obj):
+        if not obj.imagem:
+            return '—'
+        return format_html(
+            '<img src="{}" style="height:34px;width:60px;object-fit:cover;'
+            'border-radius:4px;" alt="">',
+            obj.imagem.url,
+        )
+
+    @admin.display(description='prévia da imagem')
+    def previa(self, obj):
+        if not obj.imagem:
+            return 'Nenhuma imagem enviada.'
+        return format_html(
+            '<img src="{}" style="max-width:420px;height:auto;border-radius:8px;" alt="">',
+            obj.imagem.url,
+        )
 
 
 @admin.register(Certificado)

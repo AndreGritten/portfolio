@@ -150,6 +150,77 @@ document.addEventListener('alpine:init', function () {
       },
     }
   })
+
+  /* ---------------------------------------------------------------------
+   * As duas faces do site.
+   *
+   * O topo tem dois botões: "Desenvolvedor de Software Web" (a face técnica,
+   * em carmim) e "Conheça o André fora da sua área" (as atividades de
+   * representação, clubes e MUN, em azul). Este store guarda qual está
+   * valendo.
+   *
+   * É um STORE e não um `Alpine.data`, pela mesma razão do `cabecalho`: quem
+   * lê o estado são elementos IRMÃOS no DOM — o <header> e o <main> —, sem um
+   * contêiner comum onde um `x-data` pudesse morar sem envolver a página
+   * inteira.
+   *
+   * AS DUAS FACES CONVIVEM NO HTML, e só a visibilidade muda. Não é
+   * desperdício: o narrativa.js monta os ScrollTriggers UMA vez, no
+   * arranque, e não tem API de reinicialização. Conteúdo inserido depois
+   * ficaria sem gatilho nenhum — e como `html.movimento` deixa todo
+   * `.revelar` em opacidade 0, a face nova entraria PERMANENTEMENTE
+   * INVISÍVEL. Com as duas no DOM desde o primeiro paint, os gatilhos das
+   * duas nascem juntos e a troca só alterna `display`.
+   * ------------------------------------------------------------------- */
+  Alpine.store('faces', {
+    atual: 'dev',
+
+    ehAtual(qual) {
+      return this.atual === qual
+    },
+
+    trocar(qual) {
+      if (this.atual === qual) return
+      this.atual = qual
+
+      /* O <html> é quem carrega o tema: `html[data-tema="azul"]` troca
+         `--carmim` e `--carmim-claro` (theme/input.css), e com isso toda
+         utilidade do Tailwind que use o acento vira azul de uma vez — elas
+         resolvem por variável, não por hexadecimal. Remover o atributo (em
+         vez de pôr "carmim") devolve o `:root`, que já é a face técnica. */
+      if (qual === 'fora') {
+        document.documentElement.dataset.tema = 'azul'
+      } else {
+        delete document.documentElement.dataset.tema
+      }
+
+      /* A treliça de fundo lê a cor do CSS uma vez e guarda; sem avisar, ela
+         seguiria vermelha num site azul. */
+      if (window.__campoRepintar) window.__campoRepintar()
+
+      /* O menu do cabeçalho aponta para as seções da face que está no ar, e
+         quem estava destacado some junto com ela. */
+      if (window.__recalcularMenu) window.__recalcularMenu()
+
+      /* `Alpine.nextTick` e não `this.$nextTick`: as mágicas com `$` existem
+         em componentes (`Alpine.data`), não em stores. Aqui é preciso esperar
+         o Alpine aplicar os `x-show` — antes disso a face nova ainda mede
+         zero, e medir zero é justamente o problema que a linha seguinte
+         conserta. */
+      Alpine.nextTick(function () {
+        /* O PASSO CRÍTICO. Os gatilhos da face escondida foram criados quando
+           ela media zero de altura, então todas as posições que eles guardam
+           estão erradas. `refresh()` recalcula tudo com as medidas de agora —
+           e funciona porque os gatilhos JÁ EXISTEM; o que não funcionaria
+           seria criá-los para nós que acabaram de entrar no DOM. */
+        if (window.ScrollTrigger) window.ScrollTrigger.refresh()
+
+        /* Sem isto a pessoa troca de face e cai no meio da página nova, numa
+           altura que só fazia sentido na anterior. */
+        window.scrollTo({ top: 0, behavior: 'auto' })
+      })
+    },
+  })
 })
 
 /* -----------------------------------------------------------------------
@@ -194,6 +265,20 @@ document.addEventListener('DOMContentLoaded', function () {
     secoes.push(secao)
   })
 
+  /* Um item de menu só conta se a face dele estiver no ar.
+   *
+   * As duas faces do site convivem no HTML (ver o store `faces`, acima), e
+   * cada uma tem seu próprio menu. Sem esta checagem, o menu escondido também
+   * receberia `aria-current` — e um leitor de tela anunciaria duas seções
+   * atuais, uma delas de uma face que a pessoa nem está vendo.
+   *
+   * `offsetParent` é nulo para qualquer elemento com `display: none` em si ou
+   * num ancestral, que é exatamente o que o `x-show` da face escondida
+   * aplica. Vale para o menu do celular também, que fica fechado. */
+  function estaVisivel(elemento) {
+    return elemento.offsetParent !== null
+  }
+
   function realcar(id) {
     itens.forEach(function (item) {
       var ativo = item === porId[id]
@@ -210,7 +295,12 @@ document.addEventListener('DOMContentLoaded', function () {
   var observador = new IntersectionObserver(
     function (entradas) {
       entradas.forEach(function (entrada) {
-        if (entrada.isIntersecting) realcar(entrada.target.id)
+        if (!entrada.isIntersecting) return
+        /* A seção pode estar na faixa e mesmo assim pertencer à face
+           escondida: `display: none` não impede o observador de reportar uma
+           interseção guardada de antes da troca. */
+        if (!estaVisivel(entrada.target)) return
+        realcar(entrada.target.id)
       })
     },
     {
@@ -224,4 +314,15 @@ document.addEventListener('DOMContentLoaded', function () {
   secoes.forEach(function (secao) {
     observador.observe(secao)
   })
+
+  /* Chamado pelo store `faces` ao trocar de face.
+   *
+   * Trocar de face leva o destaque junto: o item que estava aceso pertence ao
+   * menu que acabou de sumir, e o menu que entrou nasce sem nenhum aceso até
+   * a pessoa rolar o bastante para o observador disparar. Limpar tudo deixa o
+   * estado honesto — nenhuma seção em destaque até que uma esteja de fato
+   * sendo lida — em vez de deixar um realce órfão da face anterior. */
+  window.__recalcularMenu = function () {
+    realcar(null)
+  }
 })

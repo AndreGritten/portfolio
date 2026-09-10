@@ -14,7 +14,7 @@ from django.core.cache import cache
 from django.views.decorators.http import require_POST
 
 from .forms import ContatoForm
-from .models import Certificado, Experiencia, Projeto, Tecnologia
+from .models import Certificado, Experiencia, Projeto, Tecnologia, Vivencia
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +252,11 @@ def _dados_da_home():
         'formacoes': list(
             Experiencia.objects.filter(tipo=Experiencia.Tipo.EDUCACAO)
         ),
+        # A segunda face do site — as atividades fora do desenvolvimento. Vem
+        # junto com o resto, e não sob demanda, porque as duas faces convivem
+        # no mesmo HTML: o botão do topo só alterna qual está visível, sem ida
+        # ao servidor. Ver o comentário do `data-face` em home.html.
+        'vivencias': list(Vivencia.objects.filter(publicado=True)),
     }
     cache.set(CHAVE_CACHE_HOME, dados, TEMPO_DE_CACHE_DA_HOME)
     return dados

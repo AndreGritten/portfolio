@@ -40,9 +40,48 @@
       {% include 'partials/monograma.html' with tamanho='sm' %}
     </a>
 
-    {# Navegação de âncoras — desktop #}
-    <nav class="ml-auto hidden items-center gap-1 lg:flex" aria-label="Seções da página">
+    {% comment %}
+      Navegação de âncoras — desktop. Um <nav> por face do site, e só o da
+      face no ar fica visível.
+
+      São dois menus e não um filtrado no servidor porque a troca de face
+      acontece no navegador, sem nova requisição: o HTML das duas precisa já
+      estar aqui quando a pessoa clica. Ver o store `faces` em interface.js.
+    {% endcomment %}
+    {% comment %}
+      Um <nav> por face, e só o da face no ar aparece.
+
+      `:class` alternando `lg:flex`/`hidden`, e NÃO `x-show`: o `x-show`
+      escreve `display: none` inline e, ao voltar a ser verdadeiro, apaga esse
+      inline — devolvendo o elemento ao que a CLASSE manda. Aqui a classe
+      manda `hidden` (é assim que o menu some no celular), então o <nav> da
+      face ativa continuaria escondido no desktop.
+
+      A classe de estado mora só no `:class`, nunca no `class` estático: o
+      Alpine SOMA os dois em vez de substituir, e um `lg:flex` fixo deixaria
+      os DOIS menus visíveis lado a lado — o defeito da primeira versão.
+
+      O `hidden` estático é o estado inicial (antes do Alpine iniciar) e o
+      fallback sem JavaScript: sem script nenhum, nenhum dos dois menus
+      aparece, e a navegação fica por conta do menu do celular, que é um
+      <details> e funciona sem JS.
+    {% endcomment %}
+    <nav class="ml-auto hidden items-center gap-1"
+         :class="$store.faces.ehAtual('dev') ? 'lg:flex' : 'hidden'"
+         aria-label="Seções da página">
       {% for item in ITENS_MENU %}
+        <a href="{{ item.href }}"
+           data-secao="{{ item.href }}"
+           class="item-menu rounded-lg px-3 py-2 text-sm font-medium text-secundaria transition-colors hover:text-osso">
+          {{ item.rotulo }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <nav class="ml-auto hidden items-center gap-1"
+         :class="$store.faces.ehAtual('fora') ? 'lg:flex' : 'hidden'"
+         aria-label="Seções da página">
+      {% for item in ITENS_MENU_FORA %}
         <a href="{{ item.href }}"
            data-secao="{{ item.href }}"
            class="item-menu rounded-lg px-3 py-2 text-sm font-medium text-secundaria transition-colors hover:text-osso">
@@ -124,8 +163,27 @@
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto py-3">
+    {% comment %}
+      As duas listas, como no menu de desktop. Aqui `x-show` serve bem: estes
+      contêineres não têm classe de display responsiva com que brigar.
+
+      Os itens do celular não levam `item-menu` nem `data-secao` de propósito
+      — o destaque de seção atual é coisa de desktop, onde o menu fica sempre
+      visível enquanto se rola.
+    {% endcomment %}
+    <div class="flex-1 overflow-y-auto py-3" x-show="$store.faces.ehAtual('dev')">
       {% for item in ITENS_MENU %}
+        <a href="{{ item.href }}"
+           @click="$store.cabecalho.fecharMenu()"
+           class="flex min-h-11 items-center justify-between px-6 py-3.5 text-sm font-medium text-secundaria transition-colors hover:bg-osso/5 hover:text-osso">
+          {{ item.rotulo }}
+          {% icone "ChevronRight" size=15 class="text-borda-forte" aria_hidden="true" %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-3" x-cloak x-show="$store.faces.ehAtual('fora')">
+      {% for item in ITENS_MENU_FORA %}
         <a href="{{ item.href }}"
            @click="$store.cabecalho.fecharMenu()"
            class="flex min-h-11 items-center justify-between px-6 py-3.5 text-sm font-medium text-secundaria transition-colors hover:bg-osso/5 hover:text-osso">

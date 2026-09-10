@@ -70,6 +70,39 @@
   --info:    143 180 240;  /* #8FB4F0 — 8,06:1 */
 }
 
+/* =======================================================================
+ * A SEGUNDA FACE — o acento azul
+ *
+ * O site tem dois lados: o André desenvolvedor (carmim) e o André fora da
+ * área — representante de sala, Centro Acadêmico, clubes, MUN — em azul. O
+ * botão do topo alterna entre eles, e o atributo `data-tema="azul"` no
+ * <html> é o que vira a chave.
+ *
+ * SÓ O ACENTO MUDA. As superfícies (ônix, breu, fundo), os fios e a tinta
+ * são os mesmos: é a mesma pessoa e o mesmo site, não um tema alternativo.
+ * Trocar a rampa inteira faria a segunda face ler como outro produto.
+ *
+ * OS NOMES CONTINUAM `carmim`. Não é descuido: renomear para `acento`
+ * exigiria tocar ~35 utilidades espalhadas pelos templates, o campo.js, os
+ * tools e esta documentação — um diff mecânico enorme, arriscado, e sem
+ * ganho nenhum para quem lê a página. Leia `carmim` como "o acento", e
+ * `carmim-claro` como "o acento que pode ser texto".
+ *
+ * OS DOIS PAPÉIS VALEM AQUI TAMBÉM, pelo mesmo motivo medido: o azul de
+ * preenchimento dá 2,52:1 como texto sobre o fundo dos cartões, abaixo do
+ * piso de 4,5:1. Por isso `--carmim` continua sendo SÓ preenchimento e
+ * `--carmim-claro` continua sendo o que se lê. As quatro regras da paleta
+ * (mais abaixo) não mudam de uma face para a outra.
+ *
+ * Conferido por tools/conferir_cores.py, que testa as DUAS paletas contra
+ * os mesmos pisos. O azul passa com folga maior que o carmim em três dos
+ * quatro pares críticos.
+ * ==================================================================== */
+html[data-tema="azul"] {
+  --carmim:       30 95 216;   /* #1E5FD8 — SÓ preenchimento (4,90:1 com osso) */
+  --carmim-claro: 119 168 247; /* #77A8F7 — texto, fio, marcador, link (7,07:1) */
+}
+
 @layer base {
   * {
     box-sizing: border-box;

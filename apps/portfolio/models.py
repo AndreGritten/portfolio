@@ -229,6 +229,84 @@ class Projeto(models.Model):
         return casado.group(1) if casado else None
 
 
+class Vivencia(models.Model):
+    """
+    Uma atividade fora do desenvolvimento — o lado que o quadro técnico não
+    mostra: representante de sala, Centro Acadêmico, clubes, MUN.
+
+    Existe como modelo separado de `Projeto`, e não como um campo "tipo" nele,
+    porque as duas coisas não compartilham nada além de título e imagem: um
+    projeto tem tecnologias, repositório, deploy e vídeo; uma vivência tem
+    papel e período. Enfiar as duas na mesma tabela deixaria metade dos campos
+    sempre vazios, e o admin pediria ao André que ignorasse os que não valem
+    para o que ele está cadastrando.
+
+    Alimenta a segunda face do site (`data-tema="azul"`), que só aparece
+    quando alguém clica em "Conheça o André fora da sua área".
+    """
+
+    titulo = models.CharField('título', max_length=120)
+    slug = models.SlugField('identificador', max_length=140, unique=True, blank=True)
+    papel = models.CharField(
+        'papel',
+        max_length=120,
+        blank=True,
+        help_text='O que você era ali. Ex.: "Representante de sala", "Membro".',
+    )
+    periodo = models.CharField(
+        'período',
+        max_length=60,
+        blank=True,
+        help_text='Texto livre, do jeito que faz sentido para esta atividade: '
+                  '"2025", "2024 — 2025", "2º semestre de 2025".',
+    )
+    descricao_curta = models.CharField(
+        'descrição curta',
+        max_length=200,
+        help_text='Uma ou duas linhas. É o que aparece no cartão — o limite de '
+                  '200 caracteres existe para os cartões da grade ficarem da '
+                  'mesma altura.',
+    )
+    descricao = models.TextField(
+        'descrição completa',
+        blank=True,
+        help_text='Opcional. Aparece no botão "Detalhes" do cartão. Sem ela, o '
+                  'botão não é desenhado.',
+    )
+    imagem = models.ImageField(
+        'imagem',
+        upload_to='vivencias/',
+        blank=True,
+        help_text='Proporção 16:9 fica melhor no cartão. Sem imagem, o cartão '
+                  'mostra a malha técnica no lugar.',
+    )
+    publicado = models.BooleanField(
+        'publicado',
+        default=True,
+        help_text='Desmarque para esconder do site sem apagar o cadastro.',
+    )
+    ordem_exibicao = models.PositiveIntegerField('ordem de exibição', default=0)
+
+    criado_em = models.DateTimeField('criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'vivência'
+        verbose_name_plural = 'vivências'
+        # Sem `destaque` como em `Projeto`: são cinco ou seis atividades numa
+        # grade só, e a ordem manual dá conta. O título desempata para a lista
+        # não dançar quando várias ficam na ordem 0.
+        ordering = ['ordem_exibicao', 'titulo']
+
+    def __str__(self):
+        return self.titulo
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.titulo)
+        super().save(*args, **kwargs)
+
+
 class Certificado(models.Model):
     class Categoria(models.TextChoices):
         PROGRAMACAO = 'programacao', 'Programação'

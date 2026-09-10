@@ -40,7 +40,38 @@
 
 {% include 'partials/header.html' %}
 
-<main id="conteudo">
+{% comment %}
+  AS DUAS FACES DO SITE.
+
+  O topo tem dois botões: "Desenvolvedor de Software Web" (a face técnica, em
+  carmim) e "Conheça o André fora da sua área" (representação estudantil,
+  clubes, MUN — em azul). O store `faces` (static/js/interface.js) guarda qual
+  está valendo, e `html[data-tema="azul"]` (theme/input.css) vira o acento.
+
+  AS DUAS CONVIVEM NO MESMO HTML, e a troca só alterna `display`. Não é
+  desperdício de marcação — é a única forma que funciona aqui:
+
+  O narrativa.js monta os ScrollTriggers UMA vez, no arranque, e não tem API
+  de reinicialização. Conteúdo que entrasse no DOM depois não ganharia gatilho
+  nenhum, e como `html.movimento` deixa todo `.revelar` em opacidade 0, a face
+  nova entraria PERMANENTEMENTE INVISÍVEL — a rede de segurança de 2s do
+  narrativa.js dispara uma vez só e já teria passado. Com as duas no DOM desde
+  o primeiro paint, os gatilhos nascem juntos; o store só chama
+  `ScrollTrigger.refresh()` para recalcular as posições, que foram medidas com
+  a face escondida valendo zero de altura.
+
+  O HERO É COMPARTILHADO. Só o texto e o par de botões trocam — o nome, o
+  monograma e o canvas do campo são os mesmos nas duas faces, e duplicá-los
+  criaria um segundo `[data-campo]` disputando memória com o primeiro (o
+  campo.js aloca um buffer por canvas visível).
+{% endcomment %}
+
+{% comment %}
+  `x-data` vazio: o Alpine só processa diretivas dentro de uma árvore que
+  tenha um escopo, e `$store` é global — não precisa de estado próprio aqui,
+  só do escopo que autoriza os `x-show` e `:class` abaixo a existirem.
+{% endcomment %}
+<main id="conteudo" x-data>
 
   {# ==================================================================== #}
   {# 1 · TOPO                                                             #}
@@ -90,11 +121,53 @@
 
       <div class="fio-acento revelar my-7"></div>
 
-      <p class="revelar mb-3 font-display text-lg font-semibold text-osso sm:text-xl">
-        {{ PESSOA.cargo }}
-      </p>
-      <p class="revelar mb-9 max-w-[52ch] text-base leading-relaxed text-secundaria sm:text-lg">
+      {% comment %}
+        O CARGO VIROU UM PAR DE BOTÕES.
+
+        Antes era um `<p>` chapado com o cargo — o elemento menos trabalhado do
+        topo. Agora ele é uma das duas faces, e a outra fica ao lado: quem
+        chega vê que existe mais de um lado para olhar, sem precisar de
+        explicação.
+
+        `role="tablist"` porque é exatamente o que são: duas abas que trocam o
+        conteúdo abaixo. `aria-selected` diz qual está valendo, e `.btn-carmim`
+        contra `.btn-linha` mostra o mesmo visualmente — no tema azul o
+        `.btn-carmim` já pinta azul sozinho, porque resolve por variável.
+
+        A classe de ESTADO (`btn-carmim`/`btn-linha`) fica só no `:class`, e
+        nunca no `class` estático: o Alpine SOMA os dois em vez de substituir,
+        então um `class="btn-carmim"` fixo deixaria o botão aceso para sempre
+        — que foi exatamente o defeito da primeira versão, com as duas abas
+        parecendo ativas ao mesmo tempo.
+      {% endcomment %}
+      <div class="revelar mb-4 flex flex-wrap gap-2" role="tablist"
+           aria-label="Os dois lados do portfólio">
+        <button type="button" role="tab"
+                @click="$store.faces.trocar('dev')"
+                :aria-selected="$store.faces.ehAtual('dev')"
+                :class="$store.faces.ehAtual('dev') ? 'btn-carmim' : 'btn-linha'"
+                class="!text-sm">
+          {% icone "Code2" size=16 aria_hidden="true" %}
+          {{ PESSOA.cargo }}
+        </button>
+        <button type="button" role="tab"
+                @click="$store.faces.trocar('fora')"
+                :aria-selected="$store.faces.ehAtual('fora')"
+                :class="$store.faces.ehAtual('fora') ? 'btn-carmim' : 'btn-linha'"
+                class="!text-sm">
+          {% icone "Star" size=16 aria_hidden="true" %}
+          Conheça o André fora da sua área
+        </button>
+      </div>
+
+      {# A chamada acompanha a face — cada lado se apresenta com a sua. #}
+      <p class="revelar mb-9 max-w-[52ch] text-base leading-relaxed text-secundaria sm:text-lg"
+         x-show="$store.faces.ehAtual('dev')">
         {{ PESSOA.chamada }}
+      </p>
+      <p class="mb-9 max-w-[52ch] text-base leading-relaxed text-secundaria sm:text-lg"
+         x-cloak x-show="$store.faces.ehAtual('fora')">
+        {{ PESSOA.chamada_fora }}
       </p>
 
       <div class="revelar mb-9 flex flex-wrap gap-3">
@@ -102,9 +175,16 @@
           {% icone "Download" size=17 aria_hidden="true" %}
           Baixar currículo
         </a>
-        <a href="#projetos" class="btn-carmim">
+        {# O atalho aponta para a seção principal da face que está no ar. #}
+        <a href="#projetos" class="btn-carmim"
+           x-show="$store.faces.ehAtual('dev')">
           {% icone "ArrowRight" size=17 aria_hidden="true" %}
           Ver projetos
+        </a>
+        <a href="#vivencias" class="btn-carmim"
+           x-cloak x-show="$store.faces.ehAtual('fora')">
+          {% icone "ArrowRight" size=17 aria_hidden="true" %}
+          Ver atividades
         </a>
         {% for rede in REDES_SOCIAIS %}
           <a href="{{ rede.href }}" target="_blank" rel="noopener" class="btn-linha">
@@ -118,13 +198,27 @@
         </a>
       </div>
 
-      <ul class="revelar flex flex-wrap gap-2" aria-label="Principais tecnologias">
+      {% comment %}
+        As tags técnicas são da face técnica: no outro lado elas contradiriam
+        a própria mensagem da seção.
+      {% endcomment %}
+      <ul class="revelar flex flex-wrap gap-2" aria-label="Principais tecnologias"
+          x-show="$store.faces.ehAtual('dev')">
         {% for tec in tecnologias|slice:":6" %}
           <li><span class="tag {% if forloop.counter <= 2 %}tag-ac{% endif %}">{{ tec.nome }}</span></li>
         {% endfor %}
       </ul>
     </div>
   </section>
+
+  {# =================================================================== #}
+  {# FACE TÉCNICA — o André desenvolvedor                                #}
+  {#                                                                     #}
+  {# `x-cloak` não entra aqui: esta é a face padrão, e ela precisa estar #}
+  {# visível antes do Alpine iniciar. Quem esconde é o `x-show`, que só  #}
+  {# age quando a pessoa clica no outro botão.                           #}
+  {# =================================================================== #}
+  <div data-face="dev" x-show="$store.faces.ehAtual('dev')">
 
   {# ==================================================================== #}
   {# 2 · SOBRE                                                            #}
@@ -904,8 +998,201 @@
     </div>
   </section>
 
+  </div>{# fim da face técnica #}
+
+  {# =================================================================== #}
+  {# FACE FORA DA ÁREA — representação estudantil, clubes, MUN           #}
+  {#                                                                     #}
+  {# `x-cloak` aqui, e não na face técnica: esta começa escondida, e sem #}
+  {# o cloak ela pisca na tela no intervalo entre o HTML pintar e o      #}
+  {# Alpine iniciar.                                                     #}
+  {# =================================================================== #}
+  <div data-face="fora" x-cloak x-show="$store.faces.ehAtual('fora')">
+
+    {# ================================================================== #}
+    {# F1 · QUEM SOU FORA DA ÁREA                                         #}
+    {# ================================================================== #}
+    <section id="sobre-fora" class="bg-onix px-6 py-secao">
+      <div class="mx-auto max-w-6xl" data-revelar-grupo>
+
+        <p data-brilho class="rotulo revelar mb-3">Fora da área</p>
+        <h2 data-brilho class="titulo-secao revelar mb-8 text-[clamp(1.8rem,4.5vw,3rem)]">
+          O que eu faço quando não estou programando
+        </h2>
+
+        {% comment %}
+          Mesmo tratamento do "Sobre" da face técnica: parágrafos separados,
+          com espaço entre eles, num bloco de 62ch.
+        {% endcomment %}
+        <div class="max-w-[62ch] space-y-5">
+          {% for paragrafo in PESSOA.perfil_fora %}
+            <p class="revelar text-pretty text-base leading-[1.75] text-secundaria sm:text-lg">
+              {{ paragrafo }}
+            </p>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    {# O losango leva a cor de quem vem depois — aqui, o breu das atividades. #}
+    <hr class="separador-secao" style="--cor-separador: var(--breu)" aria-hidden="true">
+
+    {# ================================================================== #}
+    {# F2 · ATIVIDADES                                                    #}
+    {# ================================================================== #}
+    {% comment %}
+      Grade, e NÃO a esteira horizontal dos projetos. Duas razões:
+
+      1. `narrativa.js` pega `[data-esteira]` com `querySelector` (singular) —
+         uma segunda esteira na página seria simplesmente ignorada, e a seção
+         ficaria com os cartões numa linha que nunca corre.
+      2. São cinco ou seis atividades curtas. A esteira existe para uma fila
+         de cartões densos que não cabem na tela; aqui ela seria um mecanismo
+         complicado a serviço de nada.
+    {% endcomment %}
+    <section id="vivencias" class="bg-breu px-6 py-secao">
+      <div class="mx-auto max-w-6xl">
+
+        <p data-brilho class="rotulo revelar mb-3">Atividades</p>
+        <h2 data-brilho class="titulo-secao revelar mb-4 text-[clamp(1.8rem,4.5vw,3rem)]">
+          Onde eu me meto
+        </h2>
+        <p class="revelar mb-12 max-w-[58ch] text-secundaria">
+          Representação estudantil, clubes e simulações — o que me tira da
+          cadeira e me põe para conversar com gente.
+        </p>
+
+        {% if vivencias %}
+          {% comment %}
+            gap-6 pelo mesmo motivo dos certificados: o gap precisa ser maior
+            que o deslocamento do `.revelar`, senão o cartão por revelar cai
+            dentro do de baixo.
+          {% endcomment %}
+          <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
+            {% for vivencia in vivencias %}
+              <li class="revelar" x-data="modal">
+                <article class="card card-interativo flex h-full flex-col overflow-hidden">
+
+                  {% if vivencia.imagem %}
+                    <img src="{{ vivencia.imagem.url }}" alt=""
+                         loading="lazy" decoding="async"
+                         class="aspect-[16/10] w-full border-b border-borda object-cover">
+                  {% else %}
+                    {% comment %}
+                      Sem imagem, a própria malha — não um retângulo cinza
+                      dizendo "sem imagem". A ausência não vira aviso.
+                    {% endcomment %}
+                    <div class="malha-tecnica aspect-[16/10] w-full border-b border-borda bg-fundo"
+                         aria-hidden="true"></div>
+                  {% endif %}
+
+                  <div class="flex flex-1 flex-col p-6">
+                    {% if vivencia.papel or vivencia.periodo %}
+                      <p class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
+                        {% if vivencia.papel %}
+                          <span class="text-carmim-claro">{{ vivencia.papel }}</span>
+                        {% endif %}
+                        {% if vivencia.periodo %}
+                          <span class="flex items-center gap-1.5">
+                            {% icone "Calendar" size=12 aria_hidden="true" %}
+                            {{ vivencia.periodo }}
+                          </span>
+                        {% endif %}
+                      </p>
+                    {% endif %}
+
+                    <h3 class="titulo-cartao mb-2 text-lg">{{ vivencia.titulo }}</h3>
+                    <p class="mb-5 text-sm leading-relaxed text-secundaria">
+                      {{ vivencia.descricao_curta }}
+                    </p>
+
+                    {% if vivencia.descricao %}
+                      <div class="mt-auto flex flex-wrap gap-2">
+                        <button type="button"
+                                x-ref="gatilho"
+                                @click="abrir()"
+                                class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
+                          Detalhes
+                        </button>
+                      </div>
+                    {% endif %}
+                  </div>
+                </article>
+
+                {% if vivencia.descricao %}
+                  {% comment %}
+                    `x-teleport="body"` é obrigatório pelo mesmo motivo do
+                    modal de certificado e do de projeto: este <li> é
+                    `.revelar`, e o transform que o `.movimento .revelar`
+                    aplica faz dele o bloco contentor de qualquer `fixed`
+                    dentro — o diálogo viraria um painel preso na célula da
+                    grade. Ver o comentário completo no modal de certificado.
+                  {% endcomment %}
+                  <template x-teleport="body">
+                    <div x-cloak x-show="aberto"
+                         x-transition.opacity.duration.200ms
+                         @keydown.escape.window="fechar()"
+                         class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                         role="dialog" aria-modal="true"
+                         aria-labelledby="vivencia-titulo-{{ vivencia.pk }}">
+                      <div class="absolute inset-0 bg-black/70" @click="fechar()"></div>
+
+                      <div x-ref="dialogo" tabindex="-1"
+                           class="card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto border-borda-forte bg-fundo p-6 shadow-2xl shadow-black/60 sm:p-7">
+                        <div class="mb-5 flex items-start justify-between gap-4">
+                          <div>
+                            <h3 id="vivencia-titulo-{{ vivencia.pk }}" class="titulo-cartao text-xl">
+                              {{ vivencia.titulo }}
+                            </h3>
+                            {% if vivencia.papel or vivencia.periodo %}
+                              <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-secundaria">
+                                {% if vivencia.papel %}
+                                  <span class="text-carmim-claro">{{ vivencia.papel }}</span>
+                                {% endif %}
+                                {% if vivencia.periodo %}
+                                  <span>{{ vivencia.periodo }}</span>
+                                {% endif %}
+                              </p>
+                            {% endif %}
+                          </div>
+                          <button type="button" @click="fechar()" aria-label="Fechar"
+                                  class="-m-1 shrink-0 rounded-lg p-1 text-secundaria transition-colors hover:text-osso">
+                            {% icone "X" size=19 %}
+                          </button>
+                        </div>
+
+                        <div class="prose-projeto text-sm leading-relaxed text-secundaria">
+                          {{ vivencia.descricao|linebreaks }}
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="card p-8">
+            <p class="text-secundaria">
+              As atividades aparecem aqui assim que forem cadastradas no admin —
+              com papel, período, imagem e descrição.
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+  </div>{# fim da face fora da área #}
+
   {# ==================================================================== #}
-  {# 7 · CONTATO                                                          #}
+  {# 7 · CONTATO — compartilhado pelas duas faces                         #}
+  {#                                                                      #}
+  {# Fica FORA dos dois wrappers de propósito: o formulário carrega um    #}
+  {# token CSRF e ids de campo únicos, e duplicá-lo criaria ids repetidos #}
+  {# (HTML inválido, e o <label for> passaria a apontar para o campo      #}
+  {# errado) além de dois formulários POST concorrentes na mesma página.  #}
+  {# Uma seção só serve às duas, e o acento acompanha a face porque       #}
+  {# resolve por variável CSS.                                           #}
   {# ==================================================================== #}
   <section id="contato"
            class="relative overflow-hidden malha-tecnica border-t border-borda bg-gradient-to-b from-onix to-fundo px-6 py-secao">

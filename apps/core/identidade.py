@@ -53,6 +53,40 @@ PESSOA = {
             'antes de transformá-la em sistema.'
         ),
     ],
+
+    # ===================================================================
+    # A SEGUNDA FACE — o André fora da área
+    #
+    # Os textos abaixo alimentam a versão azul do site, que aparece ao
+    # clicar em "Conheça o André fora da sua área" no topo.
+    #
+    # Eles NÃO repetem o `perfil` acima, e isso é deliberado: o segundo
+    # parágrafo de lá já AFIRMA "comunicativo, criativo, gosto de liderar
+    # grupos". Repetir a afirmação aqui seria dizer duas vezes a mesma
+    # coisa; o trabalho desta face é MOSTRAR onde isso aconteceu, e quem
+    # mostra são as vivências cadastradas no admin. Por isso o texto daqui
+    # apresenta o lado, e as atividades provam.
+    # ===================================================================
+    'chamada_fora': (
+        'Também sou o que acontece entre uma entrega e outra: sala de aula, '
+        'centro acadêmico, clube, debate.'
+    ),
+    'perfil_fora': [
+        (
+            'Nem tudo que me forma passa por um editor de código. Em boa '
+            'parte do que faço na PUCPR o trabalho é o mesmo de sempre — '
+            'entender o que um grupo precisa, organizar quem faz o quê e '
+            'garantir que a conversa chegue a algum lugar —, só que sem '
+            'tela nenhuma no meio.'
+        ),
+        (
+            'É onde eu exercito o que não se aprende em documentação: falar '
+            'em público, defender uma ideia sem atropelar a do outro, '
+            'sustentar um projeto que depende de gente e não de servidor. '
+            'Cada atividade aqui embaixo me ensinou alguma coisa que acabo '
+            'usando de volta no trabalho técnico.'
+        ),
+    ],
 }
 
 CONTATO = {
@@ -94,5 +128,23 @@ ITENS_MENU = [
     {'rotulo': 'Certificações', 'href': '#certificacoes'},
     {'rotulo': 'Projetos', 'href': '#projetos'},
     {'rotulo': 'Habilidades', 'href': '#habilidades'},
+    {'rotulo': 'Contato', 'href': '#contato'},
+]
+
+# O menu da segunda face. Curto porque a face é curta — três seções contra as
+# seis da face técnica.
+#
+# `#sobre-fora` e não `#sobre`: as DUAS faces existem no mesmo HTML ao mesmo
+# tempo (só uma fica visível), e `id` repetido é HTML inválido — o navegador
+# rolaria sempre para o primeiro que encontrasse, e a âncora da segunda face
+# nunca funcionaria. Ver o comentário do `data-face` em
+# templates/portfolio/home.html.
+#
+# `#contato` é o mesmo das duas faces porque a seção de contato é UMA só,
+# fora dos dois wrappers: o formulário tem token CSRF e ids de campo únicos,
+# e duplicá-lo criaria ids repetidos e dois POSTs concorrentes.
+ITENS_MENU_FORA = [
+    {'rotulo': 'Quem sou', 'href': '#sobre-fora'},
+    {'rotulo': 'Atividades', 'href': '#vivencias'},
     {'rotulo': 'Contato', 'href': '#contato'},
 ]

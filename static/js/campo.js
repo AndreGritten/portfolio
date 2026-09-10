@@ -96,8 +96,36 @@
      defeito do canvas que este arquivo substitui. */
   var EPSILON = 0.0015
 
-  var CARMIM_CLARO = '229, 86, 107'
+  /* O ACENTO VEM DO CSS, e não de um literal aqui.
+   *
+   * O site tem duas faces — a técnica em carmim, a de fora da área em azul —
+   * e quem decide qual está valendo é o atributo `data-tema` no <html>, lido
+   * pelo `html[data-tema="azul"]` de theme/input.css. Se a cor estivesse
+   * fixada aqui, a treliça continuaria vermelha num site azul: o único
+   * elemento da página teimando na cor da outra face.
+   *
+   * `--carmim-claro` e não `--carmim`: o token de preenchimento reprova como
+   * fio (2,94:1 no carmim, 2,98:1 no azul, contra o piso de 3:1) — a mesma
+   * regra 2 da paleta que vale para o resto do site vale para o desenho.
+   *
+   * A conversão de formato existe porque o CSS guarda os canais separados por
+   * ESPAÇO (`229 86 107`, o formato que o `rgb(var(--x) / <alpha>)` do
+   * tailwind.config exige) e o `rgba()` deste arquivo os quer separados por
+   * VÍRGULA.
+   */
+  var ACENTO_RESERVA = '229, 86, 107' /* o carmim claro, se o CSS não responder */
+  var acento = ACENTO_RESERVA
   var OSSO = '242, 237, 230'
+
+  function lerAcento() {
+    if (!window.getComputedStyle) return
+    var valor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--carmim-claro')
+      .trim()
+    acento = valor ? valor.split(/\s+/).join(', ') : ACENTO_RESERVA
+  }
+
+  lerAcento()
 
   /* Forma e acento saem de um hash das coordenadas, não de Math.random():
      assim a composição é a MESMA a cada carga. Um fundo que se redesenha
@@ -341,10 +369,9 @@
       var lado = 3 + atual.i * 2
 
       /* REGRA 2 da paleta: o acento aqui é fio e marcador, então é o
-         carmim-claro. O laca é preenchimento e não entra em lugar nenhum
-         deste arquivo. */
-      var tinta =
-        atual.acento && atual.i > LIMIAR_ACENTO ? CARMIM_CLARO : OSSO
+         `--carmim-claro` (lido do CSS, para acompanhar a face do site). O
+         token de preenchimento não entra em lugar nenhum deste arquivo. */
+      var tinta = atual.acento && atual.i > LIMIAR_ACENTO ? acento : OSSO
 
       ctx.strokeStyle = 'rgba(' + tinta + ', ' + alfa.toFixed(3) + ')'
       ctx.beginPath()
@@ -466,6 +493,30 @@
    * Nesse instante o reforço muda mas nenhum mousemove chega, e a treliça
    * ficaria inerte enquanto o anel abre. */
   window.__campoLigar = ligar
+
+  /* Exposto para a troca de face (o componente `faces`, em interface.js).
+   *
+   * Trocar `data-tema` no <html> muda `--carmim-claro` na hora para todo o
+   * CSS, mas este arquivo já leu o valor antigo para dentro de `acento`.
+   * Reler e religar resolve: o canvas é limpo e redesenhado inteiro a cada
+   * quadro (`clearRect` no `desenhar`), então a cor nova entra no quadro
+   * seguinte, sem realocar buffer nem remontar a treliça.
+   *
+   * `ligar()` porque o laço PARA quando o desenho estabiliza — sem isso, a
+   * cor só mudaria no próximo movimento do mouse. E `pintarRepouso` para o
+   * caso em que não há laço nenhum: com movimento reduzido ou sem mouse,
+   * `ligar()` sai na primeira linha (`!animar`) e o desenho é um quadro
+   * único, que precisa ser repintado à mão para trocar de cor. */
+  window.__campoRepintar = function () {
+    lerAcento()
+    if (reativo) {
+      ligar()
+      return
+    }
+    campos.forEach(function (campo) {
+      if (campo.visivel) pintarRepouso(campo)
+    })
+  }
 
   function parar() {
     rodando = false
