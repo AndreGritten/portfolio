@@ -8,8 +8,10 @@ O resto da página é HTML — quebra alto e na cara de quem olha.
 
 import io
 from datetime import date
+from pathlib import Path
 from unittest import mock
 
+from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -551,6 +553,46 @@ class CacheDaHomeTests(TestCase):
 
         with self.assertNumQueries(0):
             self.client.get(self.url)
+
+
+class TemplatesTests(SimpleTestCase):
+    """
+    Defeitos de template que o Django não reclama e nenhum outro teste pega.
+    """
+
+    def test_comentario_curto_nao_atravessa_linhas(self):
+        """
+        `{# ... #}` é comentário de UMA LINHA. Aberto numa linha e fechado em
+        outra, o Django não o reconhece como comentário: o texto todo é
+        renderizado como conteúdo, e o comentário aparece na tela para o
+        visitante.
+
+        O erro já escapou duas vezes — a primeira num cartão de vivência, a
+        segunda no rodapé — porque lê como um comentário perfeitamente normal
+        para quem vem de outra linguagem, e o Django não avisa nada. Um teste
+        pega o caso inteiro de uma vez, em todos os templates, sem depender de
+        alguém reparar no texto vazando na página.
+
+        Comentário de várias linhas se escreve com `{% comment %}`.
+        """
+        raiz = Path(settings.BASE_DIR) / 'templates'
+        problemas = []
+
+        for caminho in raiz.rglob('*.html'):
+            for numero, linha in enumerate(
+                caminho.read_text(encoding='utf-8').splitlines(), start=1
+            ):
+                if '{#' in linha and '#}' not in linha:
+                    relativo = caminho.relative_to(settings.BASE_DIR)
+                    problemas.append(f'{relativo}:{numero}: {linha.strip()[:60]}')
+
+        self.assertEqual(
+            problemas,
+            [],
+            'Comentário `{# #}` aberto sem fechar na mesma linha — o Django '
+            'renderiza isso como texto visível. Use `{% comment %}` para '
+            'comentários de várias linhas:\n  ' + '\n  '.join(problemas),
+        )
 
 
 class ConfiguracaoTests(SimpleTestCase):
