@@ -175,6 +175,15 @@ document.addEventListener('alpine:init', function () {
   Alpine.store('faces', {
     atual: 'dev',
 
+    /* Vira `true` no primeiro clique e nunca mais volta.
+     *
+     * É o que desliga o halo pulsante da aba não escolhida e o rótulo
+     * "escolha por onde começar": os dois existem para avisar que as abas
+     * TROCAM a página, e depois que a pessoa trocou uma vez o aviso já
+     * cumpriu o papel. Continuar pulsando ali seria ruído permanente no
+     * primeiro elemento da tela. */
+    jaTrocou: false,
+
     ehAtual(qual) {
       return this.atual === qual
     },
@@ -182,6 +191,7 @@ document.addEventListener('alpine:init', function () {
     trocar(qual) {
       if (this.atual === qual) return
       this.atual = qual
+      this.jaTrocou = true
 
       /* O <html> é quem carrega o tema: `html[data-tema="azul"]` troca
          `--carmim` e `--carmim-claro` (theme/input.css), e com isso toda

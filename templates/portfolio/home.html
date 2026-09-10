@@ -139,13 +139,33 @@
         então um `class="btn-carmim"` fixo deixaria o botão aceso para sempre
         — que foi exatamente o defeito da primeira versão, com as duas abas
         parecendo ativas ao mesmo tempo.
+
+        O CONVITE. Paradas, as duas abas lêem como mais dois botões numa
+        fileira que já tem cinco — nada dizia que elas TROCAM a página
+        inteira. Dois sinais resolvem isso, e os dois somem depois do
+        primeiro clique (`jaTrocou`, no store), porque um aviso que continua
+        avisando depois de atendido vira ruído:
+
+          · o rótulo acima, que diz o que fazer;
+          · o halo pulsante (`.aba-chamando`) na aba que a pessoa AINDA NÃO
+            abriu — o único elemento que se move sozinho no topo, e por isso
+            o que o olho acha.
       {% endcomment %}
+      <p class="rotulo revelar mb-3 flex items-center gap-2"
+         x-show="!$store.faces.jaTrocou">
+        {% icone "ChevronRight" size=13 aria_hidden="true" %}
+        Escolha por onde começar
+      </p>
+
       <div class="revelar mb-4 flex flex-wrap gap-2" role="tablist"
            aria-label="Os dois lados do portfólio">
         <button type="button" role="tab"
                 @click="$store.faces.trocar('dev')"
                 :aria-selected="$store.faces.ehAtual('dev')"
-                :class="$store.faces.ehAtual('dev') ? 'btn-carmim' : 'btn-linha'"
+                :class="[
+                  $store.faces.ehAtual('dev') ? 'btn-carmim' : 'btn-linha',
+                  !$store.faces.jaTrocou && !$store.faces.ehAtual('dev') ? 'aba-chamando' : ''
+                ]"
                 class="!text-sm">
           {% icone "Code2" size=16 aria_hidden="true" %}
           {{ PESSOA.cargo }}
@@ -153,7 +173,10 @@
         <button type="button" role="tab"
                 @click="$store.faces.trocar('fora')"
                 :aria-selected="$store.faces.ehAtual('fora')"
-                :class="$store.faces.ehAtual('fora') ? 'btn-carmim' : 'btn-linha'"
+                :class="[
+                  $store.faces.ehAtual('fora') ? 'btn-carmim' : 'btn-linha',
+                  !$store.faces.jaTrocou && !$store.faces.ehAtual('fora') ? 'aba-chamando' : ''
+                ]"
                 class="!text-sm">
           {% icone "Star" size=16 aria_hidden="true" %}
           Conheça o André fora da sua área

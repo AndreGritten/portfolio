@@ -35,6 +35,9 @@ module.exports = {
     'hidden', 'flex', 'grid',
     // Estados do filtro de projetos e das mensagens de erro montadas em JS.
     'tag-ativa', 'input-erro', 'erro-campo',
+    // As duas faces do site: as classes de estado das abas do topo saem de
+    // uma expressão `:class` do Alpine, que o scanner não executa.
+    'btn-carmim', 'btn-linha', 'aba-chamando',
   ],
 
   theme: {

@@ -332,6 +332,49 @@ html[data-tema="azul"] {
   }
 
   /* =====================================================================
+   * O CHAMADO DA ABA NÃO ESCOLHIDA
+   *
+   * As duas abas do topo trocam a face inteira do site, mas paradas elas
+   * lêem como mais dois botões numa fileira que já tem cinco. Este halo
+   * pulsa devagar SÓ na aba que a pessoa ainda não abriu — é o único
+   * elemento da página que se move sozinho, e por isso funciona: num topo
+   * estático, qualquer movimento vira o ponto para onde o olho vai.
+   *
+   * `box-shadow` e não `outline` ou `border`: os dois últimos ocupam espaço
+   * na caixa e empurrariam o botão vizinho a cada pulso. A sombra é pintada
+   * fora do fluxo, então o layout não se mexe.
+   *
+   * PARA DE PULSAR depois do primeiro clique (o `x-show` no template tira a
+   * classe). Um chamado que continua chamando depois de atendido vira
+   * ruído, e a essa altura a pessoa já sabe que as abas existem.
+   *
+   * Sob `.movimento`, como todo o resto: sem a marca — JS desligado ou
+   * `prefers-reduced-motion` — o halo simplesmente não existe, e a aba fica
+   * um `.btn-linha` comum. Quem pediu menos movimento não recebe um pulso
+   * infinito no primeiro elemento da página.
+   * ================================================================== */
+  .movimento .aba-chamando {
+    animation: chamado-aba 2.6s ease-out infinite;
+    /* A borda também acompanha: o anel que sai é o eco dela, e sem isto o
+       botão de contorno neutro solta um halo carmim do nada. */
+    border-color: rgb(var(--carmim-claro) / 0.85);
+  }
+
+  /* O anel NASCE na borda e se dissipa para fora — a ordem importa.
+     Começar fechado e expandir deixa o quadro mais visível no meio do ciclo,
+     onde o olho não está esperando nada; começar aceso na borda faz o pulso
+     partir do botão, que é o que se quer apontar. `ease-out` acompanha:
+     rápido ao sair, lento ao sumir. */
+  @keyframes chamado-aba {
+    0% {
+      box-shadow: 0 0 0 0 rgb(var(--carmim-claro) / 0.45);
+    }
+    70%, 100% {
+      box-shadow: 0 0 0 9px rgb(var(--carmim-claro) / 0);
+    }
+  }
+
+  /* =====================================================================
    * SUPERFÍCIES
    * ================================================================== */
 
