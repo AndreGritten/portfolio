@@ -256,7 +256,15 @@ def _dados_da_home():
         # junto com o resto, e não sob demanda, porque as duas faces convivem
         # no mesmo HTML: o botão do topo só alterna qual está visível, sem ida
         # ao servidor. Ver o comentário do `data-face` em home.html.
-        'vivencias': list(Vivencia.objects.filter(publicado=True)),
+        #
+        # `prefetch_related('fotos')` pela mesma razão do prefetch dos
+        # projetos: a galeria de cada modal percorre `vivencia.fotos.all`, e
+        # sem ele seria uma consulta por atividade na tela.
+        'vivencias': list(
+            Vivencia.objects
+            .filter(publicado=True)
+            .prefetch_related('fotos')
+        ),
     }
     cache.set(CHAVE_CACHE_HOME, dados, TEMPO_DE_CACHE_DA_HOME)
     return dados

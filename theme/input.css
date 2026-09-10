@@ -332,32 +332,72 @@ html[data-tema="azul"] {
   }
 
   /* =====================================================================
-   * O CHAMADO DA ABA NÃO ESCOLHIDA
+   * O SELETOR DE FACE
    *
-   * As duas abas do topo trocam a face inteira do site, mas paradas elas
-   * lêem como mais dois botões numa fileira que já tem cinco. Este halo
-   * pulsa devagar SÓ na aba que a pessoa ainda não abriu — é o único
-   * elemento da página que se move sozinho, e por isso funciona: num topo
-   * estático, qualquer movimento vira o ponto para onde o olho vai.
+   * As duas opções que trocam a face inteira do site moram DENTRO de uma
+   * cápsula própria, e não soltas na fileira de botões.
+   *
+   * A razão é de leitura, não de enfeite: como dois botões lado a lado, elas
+   * ficavam idênticas ao "GitHub" e ao "LinkedIn" logo abaixo — mesma forma,
+   * mesmo peso, mesma altura — e nada distinguia "isto abre um link" de
+   * "isto vira a página inteira". A cápsula é a única forma desse tipo na
+   * página: lê como UM controle de dois estados, não como dois botões.
+   *
+   * O fundo é `--onix` a 60% e não uma cor nova: é a mesma escada de
+   * superfícies do resto do site, um degrau abaixo do que estiver atrás.
+   * ================================================================== */
+  .seletor-face {
+    @apply inline-flex gap-1 rounded-2xl border border-borda bg-onix/60 p-1.5
+           backdrop-blur-sm;
+  }
+
+  /* Cada opção. Sem borda e sem fundo próprios: quem delimita é a cápsula,
+     e uma borda aqui dentro criaria caixa dentro de caixa. */
+  .opcao-face {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl
+           px-4 py-2 text-sm font-semibold text-secundaria
+           transition-all duration-200 active:scale-95;
+  }
+
+  .opcao-face:hover {
+    @apply bg-osso/5 text-osso;
+  }
+
+  /* A escolhida. `bg-carmim` sólido — o mesmo bloco de acento dos botões
+     primários, que é o que diz "este é o estado atual" sem precisar de
+     legenda. Vira azul sozinho na outra face, porque resolve por variável. */
+  .opcao-face-ativa {
+    @apply bg-carmim text-osso shadow-sm shadow-black/30;
+  }
+
+  .opcao-face-ativa:hover {
+    @apply bg-carmim text-osso;
+  }
+
+  /* =====================================================================
+   * O CHAMADO DA OPÇÃO NÃO ESCOLHIDA
+   *
+   * Um halo que pulsa devagar SÓ na opção que a pessoa ainda não abriu — o
+   * único elemento da página que se move sozinho, e por isso funciona: num
+   * topo estático, qualquer movimento vira o ponto para onde o olho vai.
    *
    * `box-shadow` e não `outline` ou `border`: os dois últimos ocupam espaço
-   * na caixa e empurrariam o botão vizinho a cada pulso. A sombra é pintada
-   * fora do fluxo, então o layout não se mexe.
+   * na caixa e empurrariam o vizinho a cada pulso. A sombra é pintada fora
+   * do fluxo, então o layout não se mexe.
    *
-   * PARA DE PULSAR depois do primeiro clique (o `x-show` no template tira a
-   * classe). Um chamado que continua chamando depois de atendido vira
-   * ruído, e a essa altura a pessoa já sabe que as abas existem.
+   * PARA DE PULSAR depois do primeiro clique (`jaTrocou`, no store). Um
+   * chamado que continua chamando depois de atendido vira ruído, e a essa
+   * altura a pessoa já sabe que o seletor existe.
    *
    * Sob `.movimento`, como todo o resto: sem a marca — JS desligado ou
-   * `prefers-reduced-motion` — o halo simplesmente não existe, e a aba fica
-   * um `.btn-linha` comum. Quem pediu menos movimento não recebe um pulso
-   * infinito no primeiro elemento da página.
+   * `prefers-reduced-motion` — o halo simplesmente não existe. Quem pediu
+   * menos movimento não recebe um pulso infinito no topo da página.
    * ================================================================== */
   .movimento .aba-chamando {
     animation: chamado-aba 2.6s ease-out infinite;
-    /* A borda também acompanha: o anel que sai é o eco dela, e sem isto o
-       botão de contorno neutro solta um halo carmim do nada. */
-    border-color: rgb(var(--carmim-claro) / 0.85);
+    /* O texto acende junto: dentro da cápsula não há borda para colorir, e
+       um halo saindo de um texto apagado leria como defeito. */
+    @apply text-osso;
   }
 
   /* O anel NASCE na borda e se dissipa para fora — a ordem importa.
@@ -371,6 +411,49 @@ html[data-tema="azul"] {
     }
     70%, 100% {
       box-shadow: 0 0 0 9px rgb(var(--carmim-claro) / 0);
+    }
+  }
+
+  /* O RÓTULO DO CONVITE, FLUTUANDO.
+   *
+   * "Escolha por onde começar" sobe e desce 3px, devagar. Sozinho, um rótulo
+   * em caixa alta e corpo pequeno lê como legenda — coisa que se ignora. A
+   * deriva o tira do estado de legenda sem aumentá-lo nem acender cor
+   * nenhuma: é o mesmo texto, só respirando.
+   *
+   * 3px é o teto, não um ponto de partida. Acima disso o olho passa a
+   * ACOMPANHAR o movimento em vez de só notá-lo, e aí a frase compete com as
+   * abas logo abaixo — que são o que ela está mandando olhar. O ciclo de 4s,
+   * mais longo que os 2,6s do halo, mantém os dois fora de sincronia: batendo
+   * juntos, os dois viriam um pisca-pisca só.
+   *
+   * `translateY` e não `margin` ou `top`: transform não recalcula layout, só
+   * repinta — o texto desliza sem empurrar as abas a cada quadro.
+   *
+   * A CLASSE VAI NUM <span> INTERNO, e não no mesmo elemento do `.revelar`.
+   * Os dois animam `transform`: o `.revelar` sai de `translateY(14px)` e o
+   * GSAP o leva até 0 na entrada. Uma animação CSS na mesma propriedade e no
+   * mesmo elemento ganha do valor inline do GSAP, e o rótulo entraria já
+   * posicionado, sem a revelação — ou pior, brigaria com ela quadro a
+   * quadro. Em elementos separados cada um anima o seu, e os efeitos se
+   * compõem naturalmente: o pai revela, o filho flutua.
+   *
+   * Sob `.movimento` pela mesma razão do halo, e some junto com ele no
+   * primeiro clique (o `x-show` do template tira o elemento inteiro). */
+  .movimento .rotulo-flutuante {
+    animation: flutuar-rotulo 4s ease-in-out infinite;
+    /* Sem isto o <span> é inline e o transform não pega nele. */
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  @keyframes flutuar-rotulo {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(3px);
     }
   }
 

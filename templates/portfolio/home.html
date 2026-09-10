@@ -146,41 +146,50 @@
         primeiro clique (`jaTrocou`, no store), porque um aviso que continua
         avisando depois de atendido vira ruído:
 
-          · o rótulo acima, que diz o que fazer;
+          · o rótulo acima, que diz o que fazer — e flutua de leve, para não
+            ler como legenda (`.rotulo-flutuante`);
           · o halo pulsante (`.aba-chamando`) na aba que a pessoa AINDA NÃO
-            abriu — o único elemento que se move sozinho no topo, e por isso
-            o que o olho acha.
+            abriu — o que o olho acha primeiro num topo parado.
+
+        O <span> interno existe por causa do `.revelar` no <p>: os dois animam
+        `transform`, e uma animação CSS no mesmo elemento venceria o valor
+        inline que o GSAP escreve na revelação. Em elementos separados, o pai
+        revela e o filho flutua, sem disputa. Ver o comentário completo em
+        theme/input.css.
       {% endcomment %}
-      <p class="rotulo revelar mb-3 flex items-center gap-2"
-         x-show="!$store.faces.jaTrocou">
-        {% icone "ChevronRight" size=13 aria_hidden="true" %}
-        Escolha por onde começar
+      <p class="rotulo revelar mb-3" x-show="!$store.faces.jaTrocou">
+        <span class="rotulo-flutuante">
+          {% icone "ChevronRight" size=13 aria_hidden="true" %}
+          Escolha por onde começar
+        </span>
       </p>
 
-      <div class="revelar mb-4 flex flex-wrap gap-2" role="tablist"
+      <div class="revelar mb-4 flex" role="tablist"
            aria-label="Os dois lados do portfólio">
-        <button type="button" role="tab"
-                @click="$store.faces.trocar('dev')"
-                :aria-selected="$store.faces.ehAtual('dev')"
-                :class="[
-                  $store.faces.ehAtual('dev') ? 'btn-carmim' : 'btn-linha',
-                  !$store.faces.jaTrocou && !$store.faces.ehAtual('dev') ? 'aba-chamando' : ''
-                ]"
-                class="!text-sm">
-          {% icone "Code2" size=16 aria_hidden="true" %}
-          {{ PESSOA.cargo }}
-        </button>
-        <button type="button" role="tab"
-                @click="$store.faces.trocar('fora')"
-                :aria-selected="$store.faces.ehAtual('fora')"
-                :class="[
-                  $store.faces.ehAtual('fora') ? 'btn-carmim' : 'btn-linha',
-                  !$store.faces.jaTrocou && !$store.faces.ehAtual('fora') ? 'aba-chamando' : ''
-                ]"
-                class="!text-sm">
-          {% icone "Star" size=16 aria_hidden="true" %}
-          Conheça o André fora da sua área
-        </button>
+        <div class="seletor-face flex-wrap">
+          <button type="button" role="tab"
+                  @click="$store.faces.trocar('dev')"
+                  :aria-selected="$store.faces.ehAtual('dev')"
+                  :class="[
+                    $store.faces.ehAtual('dev') ? 'opcao-face-ativa' : '',
+                    !$store.faces.jaTrocou && !$store.faces.ehAtual('dev') ? 'aba-chamando' : ''
+                  ]"
+                  class="opcao-face">
+            {% icone "Code2" size=16 aria_hidden="true" %}
+            {{ PESSOA.cargo }}
+          </button>
+          <button type="button" role="tab"
+                  @click="$store.faces.trocar('fora')"
+                  :aria-selected="$store.faces.ehAtual('fora')"
+                  :class="[
+                    $store.faces.ehAtual('fora') ? 'opcao-face-ativa' : '',
+                    !$store.faces.jaTrocou && !$store.faces.ehAtual('fora') ? 'aba-chamando' : ''
+                  ]"
+                  class="opcao-face">
+            {% icone "Star" size=16 aria_hidden="true" %}
+            Conheça o André fora da sua área
+          </button>
+        </div>
       </div>
 
       {# A chamada acompanha a face — cada lado se apresenta com a sua. #}
@@ -1093,7 +1102,8 @@
           {% endcomment %}
           <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-revelar-grupo>
             {% for vivencia in vivencias %}
-              <li class="revelar" x-data="modal">
+              <li class="revelar"
+                  x-data="modalVivencia('{{ vivencia.id_video_youtube|default:'' }}')">
                 <article class="card card-interativo flex h-full flex-col overflow-hidden">
 
                   {% if vivencia.imagem %}
@@ -1129,20 +1139,39 @@
                       {{ vivencia.descricao_curta }}
                     </p>
 
-                    {% if vivencia.descricao %}
-                      <div class="mt-auto flex flex-wrap gap-2">
+                    {% comment %}
+                      O botão abre com descrição longa, com mais de uma foto
+                      OU com vídeo — antes só olhava a descrição, e uma
+                      atividade com cinco fotos e sem texto não tinha como
+                      abrir a galeria.
+                    {% endcomment %}
+                    {% if vivencia.descricao or vivencia.galeria|length > 1 or vivencia.id_video_youtube %}
+                      <div class="mt-auto flex flex-wrap items-center gap-2">
                         <button type="button"
                                 x-ref="gatilho"
                                 @click="abrir()"
                                 class="btn-linha !min-h-9 !px-3 !py-1.5 !text-xs">
                           Detalhes
                         </button>
+                        {% if vivencia.galeria|length > 1 or vivencia.id_video_youtube %}
+                          <span class="flex items-center gap-2 font-mono text-[0.62rem] uppercase tracking-[0.11em] text-secundaria">
+                            {% if vivencia.galeria|length > 1 %}
+                              {{ vivencia.galeria|length }} fotos
+                            {% endif %}
+                            {% if vivencia.id_video_youtube %}
+                              <span class="flex items-center gap-1 text-carmim-claro">
+                                {% icone "Play" size=11 aria_hidden="true" %}
+                                vídeo
+                              </span>
+                            {% endif %}
+                          </span>
+                        {% endif %}
                       </div>
                     {% endif %}
                   </div>
                 </article>
 
-                {% if vivencia.descricao %}
+                {% if vivencia.descricao or vivencia.galeria|length > 1 or vivencia.id_video_youtube %}
                   {% comment %}
                     `x-teleport="body"` é obrigatório pelo mesmo motivo do
                     modal de certificado e do de projeto: este <li> é
@@ -1184,9 +1213,108 @@
                           </button>
                         </div>
 
-                        <div class="prose-projeto text-sm leading-relaxed text-secundaria">
-                          {{ vivencia.descricao|linebreaks }}
-                        </div>
+                        {% if vivencia.galeria %}
+                          {% comment %}
+                            A GALERIA: uma foto grande e as outras em
+                            miniatura embaixo. Cada foto é desenhada de uma
+                            vez, escondida por `x-show` — não trocamos o
+                            `src` de uma <img> só, porque isso pisca em
+                            branco a cada troca enquanto a nova carrega. Com
+                            todas no DOM, o navegador já as tem decodificadas
+                            e a troca é instantânea.
+
+                            `loading="lazy"` só a partir da segunda: a
+                            primeira é a que abre junto com o diálogo.
+                          {% endcomment %}
+                          <div class="mb-6">
+                            <div class="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-borda bg-onix">
+                              {% for url, legenda in vivencia.galeria %}
+                                <img src="{{ url }}" alt="{{ legenda }}"
+                                     {% if not forloop.first %}loading="lazy"{% endif %}
+                                     decoding="async"
+                                     x-show="!videoAberto && foto === {{ forloop.counter0 }}"
+                                     class="absolute inset-0 h-full w-full object-cover">
+                              {% endfor %}
+
+                              {% if vivencia.id_video_youtube %}
+                                {% comment %}
+                                  O player mora no mesmo quadro da foto, e
+                                  não num segundo diálogo por cima: aqui não
+                                  há esteira horizontal espremendo o espaço
+                                  como nos projetos, então cabe — e um modal
+                                  sobre outro modal é uma camada a mais para
+                                  a pessoa desfazer.
+
+                                  `x-if` e não `x-show`: o <iframe> só deve
+                                  EXISTIR enquanto o vídeo está aberto.
+                                  Escondido, ele continuaria tocando —
+                                  `display: none` não pausa mídia.
+                                {% endcomment %}
+                                <template x-if="videoAberto">
+                                  <iframe :src="urlEmbed()"
+                                          class="absolute inset-0 h-full w-full"
+                                          title="{{ vivencia.titulo }} — vídeo"
+                                          frameborder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowfullscreen></iframe>
+                                </template>
+                              {% endif %}
+                            </div>
+
+                            {% comment %}
+                              A legenda troca com a foto. Fica fora do quadro
+                              para não cobrir a imagem, e some quando a foto
+                              da vez não tem legenda.
+                            {% endcomment %}
+                            {% for url, legenda in vivencia.galeria %}
+                              {% if legenda %}
+                                <p class="mt-2 text-xs text-secundaria"
+                                   x-show="!videoAberto && foto === {{ forloop.counter0 }}">
+                                  {{ legenda }}
+                                </p>
+                              {% endif %}
+                            {% endfor %}
+
+                            {% if vivencia.galeria|length > 1 or vivencia.id_video_youtube %}
+                              <div class="mt-3 flex flex-wrap gap-2">
+                                {% if vivencia.id_video_youtube %}
+                                  <button type="button" @click="alternarVideo()"
+                                          :class="videoAberto ? 'btn-carmim btn-carmim-em-cartao' : 'btn-linha'"
+                                          class="!min-h-9 !px-3 !py-1.5 !text-xs">
+                                    {% icone "Play" size=13 aria_hidden="true" %}
+                                    <span x-text="videoAberto ? 'Ver fotos' : 'Ver vídeo'">Ver vídeo</span>
+                                  </button>
+                                {% endif %}
+
+                                {% comment %}
+                                  As miniaturas só aparecem com mais de uma
+                                  foto — uma fileira com um quadrado só não
+                                  seria um seletor, seria um enfeite.
+                                {% endcomment %}
+                                {% if vivencia.galeria|length > 1 %}
+                                  {% for url, legenda in vivencia.galeria %}
+                                    <button type="button"
+                                            @click="verFoto({{ forloop.counter0 }})"
+                                            :class="!videoAberto && foto === {{ forloop.counter0 }}
+                                                    ? 'border-carmim-claro opacity-100'
+                                                    : 'border-borda opacity-60 hover:opacity-100'"
+                                            class="h-11 w-16 overflow-hidden rounded-lg border transition-all"
+                                            aria-label="Ver foto {{ forloop.counter }}">
+                                      <img src="{{ url }}" alt="" loading="lazy" decoding="async"
+                                           class="h-full w-full object-cover">
+                                    </button>
+                                  {% endfor %}
+                                {% endif %}
+                              </div>
+                            {% endif %}
+                          </div>
+                        {% endif %}
+
+                        {% if vivencia.descricao %}
+                          <div class="prose-projeto text-sm leading-relaxed text-secundaria">
+                            {{ vivencia.descricao|linebreaks }}
+                          </div>
+                        {% endif %}
                       </div>
                     </div>
                   </template>

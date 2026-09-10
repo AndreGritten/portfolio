@@ -35,9 +35,14 @@ module.exports = {
     'hidden', 'flex', 'grid',
     // Estados do filtro de projetos e das mensagens de erro montadas em JS.
     'tag-ativa', 'input-erro', 'erro-campo',
-    // As duas faces do site: as classes de estado das abas do topo saem de
+    // As duas faces do site: as classes de estado do seletor do topo saem de
     // uma expressão `:class` do Alpine, que o scanner não executa.
-    'btn-carmim', 'btn-linha', 'aba-chamando',
+    'btn-carmim', 'btn-linha', 'aba-chamando', 'opcao-face-ativa',
+    'btn-carmim-em-cartao',
+    // Estados das miniaturas da galeria de vivências, também montados em
+    // `:class` — a miniatura da foto aberta contra as demais.
+    'border-carmim-claro', 'border-borda', 'opacity-100', 'opacity-60',
+    'hover:opacity-100',
   ],
 
   theme: {

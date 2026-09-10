@@ -18,6 +18,7 @@ from django.urls import reverse
 from .models import (
     Certificado,
     Experiencia,
+    FotoVivencia,
     MensagemContato,
     Projeto,
     Tecnologia,
@@ -271,6 +272,74 @@ class SegundaFaceTests(TestCase):
     def test_slug_sai_do_titulo(self):
         self.assertEqual(self.vivencia.slug, 'representante-de-sala')
 
+    def test_galeria_poe_a_principal_na_frente(self):
+        """
+        A foto do cartão abre primeiro nos detalhes.
+
+        `Vivencia.imagem` e `FotoVivencia` são tabelas diferentes, e a ordem
+        entre elas não sai de um ORDER BY — sai desta property. Sem ela, o
+        template teria de decidir, e a regra viveria espalhada no HTML.
+        """
+        self.vivencia.imagem = 'vivencias/principal.png'
+        self.vivencia.save()
+        FotoVivencia.objects.create(
+            vivencia=self.vivencia, imagem='vivencias/b.png', ordem_exibicao=2
+        )
+        FotoVivencia.objects.create(
+            vivencia=self.vivencia, imagem='vivencias/a.png', ordem_exibicao=1
+        )
+
+        urls = [url for url, _ in self.vivencia.galeria]
+        self.assertEqual(len(urls), 3)
+        self.assertIn('principal.png', urls[0])
+        # E as extras seguem a ordem de exibição, não a de cadastro.
+        self.assertIn('a.png', urls[1])
+        self.assertIn('b.png', urls[2])
+
+    def test_galeria_vazia_sem_nenhuma_foto(self):
+        """Sem foto nenhuma a galeria não existe, e o modal não a desenha."""
+        self.assertEqual(self.vivencia.galeria, [])
+
+    def test_id_do_video_sai_de_qualquer_formato(self):
+        """Mesma extração de `Projeto` — a regra é uma só, não duas cópias."""
+        for url in [
+            'https://www.youtube.com/watch?v=nS2oIIDgPVk',
+            'https://youtu.be/nS2oIIDgPVk',
+            'https://www.youtube.com/embed/nS2oIIDgPVk',
+        ]:
+            self.vivencia.link_video = url
+            self.assertEqual(self.vivencia.id_video_youtube, 'nS2oIIDgPVk', url)
+
+    def test_sem_video_o_id_e_nulo(self):
+        self.vivencia.link_video = ''
+        self.assertIsNone(self.vivencia.id_video_youtube)
+        self.vivencia.link_video = 'https://exemplo.com/nao-e-youtube'
+        self.assertIsNone(self.vivencia.id_video_youtube)
+
+    def test_foto_nova_limpa_o_cache(self):
+        """
+        Salvar uma foto pelo inline do admin não toca na `Vivencia` dona, então
+        o signal dela não cobriria este caso — `FotoVivencia` precisa estar em
+        `MODELOS_DA_HOME` por conta própria.
+
+        A checagem é sobre o CONTEXTO e não sobre o HTML: a legenda só é
+        desenhada quando a galeria tem mais de uma foto, e amarrar este teste
+        a essa condição de layout faria dele um teste de template disfarçado
+        de teste de cache — quebraria ao mudar a regra de exibição, sem que o
+        cache tivesse nada a ver com isso.
+        """
+        self.client.get(self.url)
+
+        FotoVivencia.objects.create(
+            vivencia=self.vivencia,
+            imagem='vivencias/nova.png',
+            legenda='Uma legenda qualquer',
+        )
+
+        resposta = self.client.get(self.url)
+        vivencia = resposta.context['vivencias'][0]
+        self.assertEqual(vivencia.fotos.count(), 1)
+
 
 class ModeloTests(TestCase):
     def test_periodo_em_curso(self):
@@ -396,13 +465,43 @@ class CacheDaHomeTests(TestCase):
         quantidade de linhas, que é a definição do defeito que este teste
         existe para pegar.
 
-        Subiu de 5 para 6 com as `Vivencia`, as atividades da segunda face do
-        site. É uma consulta a mais por VISITA CACHEADA (a cada quinze
-        minutos, ou a cada edição no admin), não por acesso — e as duas faces
-        vêm no mesmo HTML, então não há uma segunda requisição quando a pessoa
-        troca de lado.
+        Subiu de 5 para 6 com a segunda face do site: a consulta das
+        `Vivencia`. É uma a mais por VISITA CACHEADA (a cada quinze minutos,
+        ou a cada edição no admin), não por acesso — e as duas faces vêm no
+        mesmo HTML, então não há requisição nova quando a pessoa troca de
+        lado.
+
+        SÃO 6 E NÃO 7 porque este cenário não tem vivência nenhuma
+        cadastrada: sem linhas na tabela, o Django pula a consulta do
+        `prefetch_related('fotos')` — não há id nenhum para procurar. Com
+        atividades cadastradas são 7, e é o `test_galeria_nao_cresce_com_as_
+        atividades` logo abaixo que prova que o número para em 7 e não cresce
+        com a quantidade delas, que é a definição do N+1 que o prefetch
+        existe para evitar.
         """
         with self.assertNumQueries(6):
+            self.client.get(self.url)
+
+    def test_galeria_nao_cresce_com_as_atividades(self):
+        """
+        O prefetch das fotos é uma consulta só, com uma ou com muitas.
+
+        Sem ele, montar a galeria de cada modal custaria uma consulta por
+        atividade na tela — o N+1 clássico, que não aparece com um registro de
+        teste e explode com o conteúdo real.
+        """
+        for i in range(6):
+            vivencia = Vivencia.objects.create(
+                titulo=f'Atividade {i}',
+                descricao_curta='.',
+                publicado=True,
+            )
+            FotoVivencia.objects.create(
+                vivencia=vivencia, imagem=f'vivencias/{i}.png'
+            )
+
+        cache.clear()
+        with self.assertNumQueries(7):
             self.client.get(self.url)
 
     def test_salvar_no_admin_limpa_o_cache(self):

@@ -77,6 +77,66 @@ document.addEventListener('alpine:init', function () {
   })
 
   /* ---------------------------------------------------------------------
+   * Modal de vivência: detalhes + galeria de fotos + vídeo.
+   *
+   * Estende o `modal` com o que uma atividade tem e um certificado não:
+   * várias fotos (uma grande, as outras em miniatura) e, às vezes, um
+   * vídeo.
+   *
+   * `foto` é o ÍNDICE da foto aberta, não a URL. O template já tem a lista
+   * renderizada pelo Django; guardar o índice evita repetir as URLs dentro
+   * de uma expressão JavaScript no HTML, onde elas escapariam do
+   * `{% estatico %}` e de qualquer troca futura de storage.
+   * ------------------------------------------------------------------- */
+  Alpine.data('modalVivencia', function (idYoutube) {
+    return {
+      aberto: false,
+      foto: 0,
+      videoAberto: false,
+      idYoutube: idYoutube,
+
+      abrir() {
+        this.aberto = true
+        document.body.style.overflow = 'hidden'
+        this.$nextTick(() => {
+          const alvo = this.$refs.dialogo
+          if (alvo) alvo.focus()
+        })
+      },
+
+      fechar() {
+        this.aberto = false
+        /* O vídeo morre junto: um <iframe> escondido por `x-show` continua
+           tocando — `display: none` não pausa mídia. Zerar o estado aqui é
+           o que garante que fechar os detalhes cala o som, sem depender de
+           a pessoa ter fechado o player antes. */
+        this.videoAberto = false
+        document.body.style.overflow = ''
+        if (this.$refs.gatilho) this.$refs.gatilho.focus()
+      },
+
+      verFoto(indice) {
+        this.foto = indice
+        /* Trocar de foto fecha o vídeo: os dois ocupam o mesmo lugar no
+           alto do diálogo, e deixá-los empilhados esconderia a foto nova
+           atrás de um player que a pessoa não pediu para manter. */
+        this.videoAberto = false
+      },
+
+      alternarVideo() {
+        this.videoAberto = !this.videoAberto
+      },
+
+      /* Mesma razão do `modalProjeto`: a query string mora num lugar só, e
+         o `src` vazio enquanto fechado é o que de fato interrompe o vídeo. */
+      urlEmbed() {
+        if (!this.videoAberto) return ''
+        return 'https://www.youtube.com/embed/' + this.idYoutube + '?autoplay=1&rel=0'
+      },
+    }
+  })
+
+  /* ---------------------------------------------------------------------
    * Modal de projeto: detalhes + vídeo, no MESMO escopo.
    *
    * Um `<li>` só aceita um `x-data` — por isso os dois diálogos do cartão

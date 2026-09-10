@@ -16,7 +16,15 @@ Três decisões que valem explicação:
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Certificado, Experiencia, MensagemContato, Projeto, Tecnologia, Vivencia
+from .models import (
+    Certificado,
+    Experiencia,
+    FotoVivencia,
+    MensagemContato,
+    Projeto,
+    Tecnologia,
+    Vivencia,
+)
 
 admin.site.site_header = 'Portfólio · André Gritten'
 admin.site.site_title = 'Portfólio'
@@ -111,9 +119,36 @@ class ProjetoAdmin(admin.ModelAdmin):
         return f'{", ".join(nomes[:3])} +{len(nomes) - 3}'
 
 
+class FotoVivenciaInline(admin.TabularInline):
+    """
+    As fotos extras, cadastradas na própria tela da vivência.
+
+    Inline e não um menu separado: ninguém pensa "vou cadastrar uma foto" —
+    pensa "vou pôr mais fotos NESTA atividade". Um menu à parte obrigaria a
+    escolher a vivência num select a cada foto, e a errar a escolha.
+    """
+
+    model = FotoVivencia
+    extra = 3
+    fields = ('imagem', 'previa', 'legenda', 'ordem_exibicao')
+    readonly_fields = ('previa',)
+
+    @admin.display(description='prévia')
+    def previa(self, obj):
+        if not obj.imagem:
+            return '—'
+        return format_html(
+            '<img src="{}" style="height:56px;width:96px;object-fit:cover;'
+            'border-radius:4px;" alt="">',
+            obj.imagem.url,
+        )
+
+
 @admin.register(Vivencia)
 class VivenciaAdmin(admin.ModelAdmin):
-    list_display = ('miniatura', 'titulo', 'papel', 'periodo', 'publicado', 'ordem_exibicao')
+    inlines = (FotoVivenciaInline,)
+    list_display = ('miniatura', 'titulo', 'papel', 'total_fotos', 'periodo',
+                    'publicado', 'ordem_exibicao')
     # `titulo` fica de fora de list_editable pela mesma razão do ProjetoAdmin:
     # `miniatura` é a primeira coluna, então o link para o formulário passa a
     # ser o título, e o Django recusa editar em linha a coluna que é link.
@@ -129,6 +164,11 @@ class VivenciaAdmin(admin.ModelAdmin):
         }),
         ('Conteúdo', {
             'fields': ('descricao_curta', 'descricao', 'imagem', 'previa'),
+        }),
+        ('Vídeo', {
+            'fields': ('link_video',),
+            'description': 'Opcional. Aparece como um botão dentro dos '
+                           'detalhes, que abre o player sem sair do site.',
         }),
         ('Exibição', {
             'fields': ('publicado', 'ordem_exibicao'),
@@ -159,6 +199,19 @@ class VivenciaAdmin(admin.ModelAdmin):
             '<img src="{}" style="max-width:420px;height:auto;border-radius:8px;" alt="">',
             obj.imagem.url,
         )
+
+    @admin.display(description='fotos')
+    def total_fotos(self, obj):
+        # +1 pela principal, que mora em `Vivencia.imagem` e não na tabela de
+        # fotos — o número aqui é o que a pessoa vê na galeria, não a
+        # contagem de linhas de uma tabela.
+        extras = obj.fotos.count()
+        total = extras + (1 if obj.imagem else 0)
+        return total or '—'
+
+    def get_queryset(self, request):
+        # Sem isto, `total_fotos` dispara uma consulta por linha da listagem.
+        return super().get_queryset(request).prefetch_related('fotos')
 
 
 @admin.register(Certificado)

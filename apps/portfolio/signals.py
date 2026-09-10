@@ -18,12 +18,31 @@ from django.core.cache import cache
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
-from .models import Certificado, Experiencia, Projeto, Tecnologia, Vivencia
+from .models import (
+    Certificado,
+    Experiencia,
+    FotoVivencia,
+    Projeto,
+    Tecnologia,
+    Vivencia,
+)
 
 # `MensagemContato` fica de fora: ela não aparece na home. Uma mensagem de
 # contato recebida não deve invalidar nada — e é justamente o modelo que mais
 # recebe escrita.
-MODELOS_DA_HOME = (Projeto, Certificado, Experiencia, Tecnologia, Vivencia)
+#
+# `FotoVivencia` entra: uma foto nova numa atividade muda a galeria do modal,
+# e sem isto ela só apareceria no próximo TTL. Salvar a foto pelo inline do
+# admin não toca na `Vivencia` dona, então o signal dela não cobriria este
+# caso.
+MODELOS_DA_HOME = (
+    Projeto,
+    Certificado,
+    Experiencia,
+    Tecnologia,
+    Vivencia,
+    FotoVivencia,
+)
 
 
 @receiver(post_save)

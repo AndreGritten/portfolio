@@ -274,11 +274,22 @@ class Vivencia(models.Model):
                   'botão não é desenhado.',
     )
     imagem = models.ImageField(
-        'imagem',
+        'imagem principal',
         upload_to='vivencias/',
         blank=True,
-        help_text='Proporção 16:9 fica melhor no cartão. Sem imagem, o cartão '
-                  'mostra a malha técnica no lugar.',
+        help_text='A foto do cartão, e a primeira a abrir nos detalhes. '
+                  'Proporção 16:9 fica melhor. Sem imagem, o cartão mostra a '
+                  'malha técnica no lugar. As outras fotos entram logo abaixo, '
+                  'em "Fotos da vivência".',
+    )
+    link_video = models.URLField(
+        'link do vídeo (YouTube)',
+        blank=True,
+        help_text='Opcional. Cole a URL da página do vídeo no YouTube, do '
+                  'jeito que aparece na barra de endereço — funciona com o '
+                  'link completo, o link curto (youtu.be) ou o de '
+                  '"compartilhar". Abre num player dentro dos detalhes, sem '
+                  'sair do site.',
     )
     publicado = models.BooleanField(
         'publicado',
@@ -305,6 +316,87 @@ class Vivencia(models.Model):
         if not self.slug:
             self.slug = slugify(self.titulo)
         super().save(*args, **kwargs)
+
+    @property
+    def id_video_youtube(self):
+        """
+        O ID do vídeo, ou `None` — mesma extração de `Projeto`.
+
+        Usa o `PADRAO_ID_YOUTUBE` do topo do módulo, e não uma cópia: o que
+        conta como link válido do YouTube é uma regra só, e duplicá-la
+        garantiria que um dia as duas divergissem.
+        """
+        if not self.link_video:
+            return None
+        casado = PADRAO_ID_YOUTUBE.search(self.link_video)
+        return casado.group(1) if casado else None
+
+    @property
+    def galeria(self):
+        """
+        Todas as fotos da atividade, a principal na frente.
+
+        A principal mora em `Vivencia.imagem` e o resto em `FotoVivencia`, e
+        o modal precisa das duas coisas como UMA lista para montar a foto
+        grande e as miniaturas. Juntar aqui, e não no template, mantém a
+        regra ("a do cartão vem primeiro") num lugar só e testável.
+
+        Cada item é um par `(url, legenda)` — o template não precisa saber de
+        qual das duas origens a foto veio, e não teria como fazer essa união
+        sozinho, porque a linguagem de template não concatena listas.
+
+        Devolve `[]` quando não há foto nenhuma, e nesse caso o modal
+        simplesmente não desenha a galeria.
+        """
+        itens = []
+        if self.imagem:
+            itens.append((self.imagem.url, ''))
+        # `.all()` e não `.filter()`: o `prefetch_related('fotos')` da view
+        # já trouxe tudo, e qualquer filtro aqui desfaria o prefetch,
+        # devolvendo uma consulta por atividade na tela.
+        itens += [(foto.imagem.url, foto.legenda) for foto in self.fotos.all() if foto.imagem]
+        return itens
+
+
+class FotoVivencia(models.Model):
+    """
+    Uma foto a mais de uma vivência, além da que aparece no cartão.
+
+    Modelo à parte, e não três campos `imagem_2`, `imagem_3`, `imagem_4` no
+    próprio `Vivencia`: uma atividade pode render duas fotos e outra pode
+    render dez, e campos fixos ou travam a segunda ou deixam a primeira com
+    oito campos vazios no formulário do admin. Como modelo, a quantidade é
+    problema de quem cadastra, não do esquema.
+
+    A foto do cartão continua sendo `Vivencia.imagem` — esta tabela é só o
+    RESTO. Ver o comentário de `Vivencia.imagem` sobre por que ela não veio
+    para cá também: o cartão precisa saber qual é a principal sem consultar
+    outra tabela e sem depender de "a primeira da lista", que muda de lugar
+    quando alguém reordena.
+    """
+
+    vivencia = models.ForeignKey(
+        Vivencia,
+        verbose_name='vivência',
+        on_delete=models.CASCADE,
+        related_name='fotos',
+    )
+    imagem = models.ImageField('imagem', upload_to='vivencias/')
+    legenda = models.CharField(
+        'legenda',
+        max_length=140,
+        blank=True,
+        help_text='Opcional. Aparece abaixo da foto quando ela está aberta.',
+    )
+    ordem_exibicao = models.PositiveIntegerField('ordem de exibição', default=0)
+
+    class Meta:
+        verbose_name = 'foto da vivência'
+        verbose_name_plural = 'fotos da vivência'
+        ordering = ['ordem_exibicao', 'pk']
+
+    def __str__(self):
+        return self.legenda or f'Foto de {self.vivencia.titulo}'
 
 
 class Certificado(models.Model):

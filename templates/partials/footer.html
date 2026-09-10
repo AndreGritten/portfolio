@@ -1,5 +1,7 @@
 {% load icones %}
-<footer class="border-t border-borda bg-onix px-6 py-14">
+{# `x-data` vazio: o rodapé fica fora do <main>, e o Alpine só processa
+   diretivas dentro de uma árvore com escopo. O `$store` em si é global. #}
+<footer x-data class="border-t border-borda bg-onix px-6 py-14">
   <div class="mx-auto max-w-6xl">
     <div class="mb-10 grid gap-10 md:grid-cols-3">
 
@@ -29,10 +31,28 @@
         </div>
       </div>
 
-      <div>
+      {% comment %}
+        Uma lista por face do site, como no cabeçalho — o rodapé da face azul
+        listava as seções da face técnica, mandando para âncoras que não
+        existem enquanto ela está no ar.
+
+        `x-show` serve aqui (ao contrário do cabeçalho, onde ele brigava com
+        o `hidden lg:flex`): estas listas não têm classe de display
+        responsiva, então esconder e mostrar não desfaz nada.
+      {% endcomment %}
+      <div x-show="$store.faces.ehAtual('dev')">
         <h2 class="rotulo rotulo-mudo mb-4">Seções</h2>
         <ul class="space-y-2.5 text-sm text-secundaria">
           {% for item in ITENS_MENU %}
+            <li><a href="{{ item.href }}" class="link-rodape">{{ item.rotulo }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div x-cloak x-show="$store.faces.ehAtual('fora')">
+        <h2 class="rotulo rotulo-mudo mb-4">Seções</h2>
+        <ul class="space-y-2.5 text-sm text-secundaria">
+          {% for item in ITENS_MENU_FORA %}
             <li><a href="{{ item.href }}" class="link-rodape">{{ item.rotulo }}</a></li>
           {% endfor %}
         </ul>

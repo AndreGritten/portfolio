@@ -157,6 +157,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # entende.
 DATABASE_URL = config('DATABASE_URL', default='')
 
+# A TRAVA DE DESENVOLVIMENTO, e a história que a justifica.
+#
+# Com `DATABASE_URL` no .env, rodar `manage.py` na máquina de casa fala com o
+# banco de PRODUÇÃO no Supabase — o mesmo que o site no ar usa. Não é um
+# espelho, não é uma cópia: é o banco. Um `Model.objects.all().delete()`
+# escrito para limpar dados de teste apaga o conteúdo real, e foi exatamente
+# assim que as vivências cadastradas se perderam uma vez.
+#
+# `USAR_BANCO_LOCAL=True` no .env manda o desenvolvimento usar o SQLite do
+# repositório, e ignorar a `DATABASE_URL` mesmo que ela esteja definida. A
+# variável fica no .env de cada máquina, nunca versionada, e não existe em
+# produção — onde `DEBUG` é False e esta trava é ignorada de qualquer forma,
+# porque um deploy sem banco não teria como funcionar.
+#
+# O guard de DEBUG é o que impede o acidente inverso: alguém copiar
+# `USAR_BANCO_LOCAL=True` para o ambiente de produção e derrubar o site com um
+# SQLite vazio dentro de um container efêmero.
+USAR_BANCO_LOCAL = DEBUG and config('USAR_BANCO_LOCAL', default=False, cast=bool)
+
+if USAR_BANCO_LOCAL:
+    DATABASE_URL = ''
+
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
